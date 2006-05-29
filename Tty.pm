@@ -12,8 +12,8 @@ require DynaLoader;
 
 use vars qw(@ISA $VERSION $XS_VERSION $CONFIG $DEBUG);
 
-$VERSION = 1.03;
-$XS_VERSION = "1.03";
+$VERSION = 1.04;
+$XS_VERSION = "1.04";
 @ISA = qw(IO::Handle);
 
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
@@ -98,7 +98,7 @@ IO::Tty - Low-level allocate a pseudo-Tty, import constants.
 
 =head1 VERSION
 
-1.03
+1.04
 
 =head1 SYNOPSIS
 
@@ -148,6 +148,8 @@ test' passes) with comments about "features":
 
 Returns EIO instead of EOF when the slave is closed.  Benign.
 
+=item * AIX 5.x
+
 =item * FreeBSD 4.4
 
 EOF on the slave tty is not reported back to the master.
@@ -186,6 +188,8 @@ the call just hangs forever and even alarm() cannot get you out.
 Don't complain to me...
 
 EOF on the slave tty is not reported back to the master.
+
+=item * z/OS
 
 =back
 

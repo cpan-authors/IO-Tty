@@ -7,14 +7,8 @@ To build this distribution, run
   make test
   make install
 
-This (v1.03) is a small bugfix-release. I fixed an issue with 
-newCONSTSUB, so the IO::Tty::Constants now work as designed: 
-they all exist but are undef if not implemented on your system, 
-so you can wrap ioctl with an 'if (defined CONSTANT)'. This
-means that warnings about bad ioctl should be gone.
-
-I was not able to check this fix on perl versions older than 
-5.8 so there might be issues with them. 
+This (v1.04) is a small bugfix-release. Added handling for z/OS
+which uses BSD-style PTYs of the format /dev/ptyp0000.
 
 Please note that pty creation is very system-dependend, and there 
 are a *lot* of different systems out there.  If you have problems 
@@ -23,7 +17,7 @@ of a manual installation ('perl Makefile.PL; make; make test;')
 and I'll see what I can deduce from it.
 
 Supported systems include Linux, Solaris, AIX, OSF, *BSD, IRIX, HP-UX
-and finally Windows (under the Cygwin environment, see
+and finally Windows (only under the Cygwin environment, see
 http://www.cygwin.com/).  See the IO::Tty manpage for a
 detailed list.  
 
@@ -45,4 +39,4 @@ think about lending them a machine for their compile farm!
 
 
 Roland <RGiersig@cpan.org>
-2006-05-05
+2006-05-31

@@ -1,3 +1,11 @@
+2006-05-28   Roland Giersig  <rgiersig@cpan.org>
+
+	* v1.04
+
+	* Tty.xs: added handling for z/OS (uses /dev/ptyp0000)
+
+	* Makefile.PL: added <sys/pty.h> (for HPUX)
+
 2006-04-25   Roland Giersig  <rgiersig@cpan.org>
 
 	* v1.03

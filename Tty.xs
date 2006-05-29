@@ -690,6 +690,7 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 		*ptyfd = open(buf, O_RDWR | O_NOCTTY);
 		if (*ptyfd >= 0 && open_slave(ptyfd, ttyfd, namebuf, namebuflen))
 		    break;
+
 		/* Try SCO style naming */
 		sprintf(buf, "/dev/ptyp%d", i);
 		sprintf(tbuf, "/dev/ttyp%d", i);
@@ -700,6 +701,18 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 		*ptyfd = open(buf, O_RDWR | O_NOCTTY);
 		if (*ptyfd >= 0 && open_slave(ptyfd, ttyfd, namebuf, namebuflen))
 		    break;
+
+		/* Try z/OS style naming */
+		sprintf(buf, "/dev/ptyp%0.4d", i);
+		sprintf(tbuf, "/dev/ttyp%0.4d", i);
+		if (strlcpy(namebuf, tbuf, namebuflen) >= namebuflen) {
+		  warn("ERROR: pty_allocate: ttyname truncated");
+		  return 0;
+		}
+		*ptyfd = open(buf, O_RDWR | O_NOCTTY);
+		if (*ptyfd >= 0 && open_slave(ptyfd, ttyfd, namebuf, namebuflen))
+		    break;
+
 		namebuf[0] = 0;
 	    }
 	    if (*ptyfd >= 0)

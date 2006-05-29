@@ -12,7 +12,7 @@ $^W=1;
 
 my %define;
 my @libs;
-my $Package_Version = '1.03';  # keep this consistent with Tty.pm
+my $Package_Version = '1.04';  # keep this consistent with Tty.pm
 my $Is_Beta = ($Package_Version =~ m/_/);
 
 open(SUB, ">xssubs.c") or die "open: $!";
@@ -72,13 +72,17 @@ if (system("$Config{'cc'} $flags compilerok.c > compilerok.log 2>&1")) {
   die <<"__EOT__";
 
 ERROR: cannot run the configured compiler '$Config{'cc'}'
-(see conf/compilerok.log). Suggestions: 
-1) The complier '$Config{'cc'}' is not in your PATH. Add it.
-2) The compiler isn't installed on your system. Install it.
+(see conf/compilerok.log). Suggestions:
+1) The complier '$Config{'cc'}' is not in your PATH. Add it
+   to the PATH and try again. OR
+2) The compiler isn't installed on your system. Install it. OR
 3) You only have a different compiler installed (e.g. 'gcc').
    Either fix the compiler config in the perl Config.pm
    or install a perl that was built with the right compiler
    (you could build perl yourself with the available compiler).
+
+Note: this is a system-administration issue, please ask your local
+admin for help. Thank you.
 
 __EOT__
 }
@@ -151,7 +155,8 @@ ESQ
 
 # find various headerfiles
 
-my @headers = qw(termios.h termio.h libutil.h util.h pty.h sys/stropts.h sys/ptyio.h);
+my @headers = qw(termios.h termio.h libutil.h util.h pty.h
+                 sys/stropts.h sys/ptyio.h sys/pty.h);
 my %headers;
 
 foreach my $h (sort @headers) {
