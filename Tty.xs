@@ -703,8 +703,8 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 		    break;
 
 		/* Try z/OS style naming */
-		sprintf(buf, "/dev/ptyp%0.4d", i);
-		sprintf(tbuf, "/dev/ttyp%0.4d", i);
+		sprintf(buf, "/dev/ptyp%04d", i);
+		sprintf(tbuf, "/dev/ttyp%04d", i);
 		if (strlcpy(namebuf, tbuf, namebuflen) >= namebuflen) {
 		  warn("ERROR: pty_allocate: ttyname truncated");
 		  return 0;
