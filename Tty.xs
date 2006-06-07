@@ -18,18 +18,6 @@ typedef int SysRet;
 typedef FILE * InOutStream;
 #endif
 
-/*
- * Define an XSUB that returns a constant scalar. The resulting structure is
- * identical to that created by the parser when it parses code like :
- *
- *    sub xyz () { 123 }
- *
- * This allows the constants from the XSUB to be inlined.
- *
- * !!! THIS SHOULD BE ADDED INTO THE CORE CODE !!!!
- *
- */
-
 #include "patchlevel.h"
 
 #if (PATCHLEVEL < 3) || ((PATCHLEVEL == 3) && (SUBVERSION < 22))
@@ -75,6 +63,14 @@ typedef FILE * InOutStream;
 
 #ifdef HAVE_PTY_H
 # include <pty.h>
+#endif
+
+#ifdef HAVE_SYS_PTY_H
+# include <sys/pty.h>
+#endif
+
+#ifdef HAVE_SYS_PTYIO_H
+# include <sys/ptyio.h>
 #endif
 
 #if defined(HAVE_DEV_PTMX) && defined(HAVE_SYS_STROPTS_H)

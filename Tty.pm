@@ -12,8 +12,8 @@ require DynaLoader;
 
 use vars qw(@ISA $VERSION $XS_VERSION $CONFIG $DEBUG);
 
-$VERSION = 1.04;
-$XS_VERSION = "1.04";
+$VERSION = 1.05;
+$XS_VERSION = "1.05";
 @ISA = qw(IO::Handle);
 
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
@@ -98,7 +98,7 @@ IO::Tty - Low-level allocate a pseudo-Tty, import constants.
 
 =head1 VERSION
 
-1.04
+1.05
 
 =head1 SYNOPSIS
 
@@ -113,13 +113,14 @@ You wouldn't want to use it directly except to import constants, use
 C<IO::Pty>.  For a list of importable constants, see
 L<IO::Tty::Constant>.
 
-Windows is now supported, not natively but under the Cygwin
+Windows is now supported, but ONLY under the Cygwin
 environment, see L<http://sources.redhat.com/cygwin/>.
 
 Please note that pty creation is very system-dependend.  From my
 experience, any modern POSIX system should be fine.  Find below a list
-of systems that C<IO::Tty> should work on.  A more detailed table is
-available from the project pages document manager at SourceForge
+of systems that C<IO::Tty> should work on.  A more detailed table
+(which is slowly getting out-of-date) is available from the project
+pages document manager at SourceForge
 L<http://sourceforge.net/projects/expectperl/>.
 
 If you have problems on your system and your system is listed in the
@@ -133,8 +134,10 @@ do a C<'perl Makefile.PL; make; make test; uname -a'> and send me
 that.  There are chances that it will work right out-of-the-box...
 
 If it's working on your system, please send me a short note with
-details (version number, distribution, etc. C<'uname -a'> is a good
-start) so I can get an overview.  Thanks!
+details (version number, distribution, etc. 'uname -a' and 'perl -V'
+is a good start; also, the output from "perl Makefile.PL" contains a
+lot of interesting info, so please include that as well) so I can get
+an overview.  Thanks!
 
 
 =head1 VERIFIED SYSTEMS, KNOWN ISSUES
@@ -161,6 +164,8 @@ Tcl/Expect, see http://expect.nist.gov/FAQ.html
 
 EOF on the slave tty is not reported back to the master.
 
+=item * Darwin 7.9.0
+
 =item * HPUX 10.20 & 11.00
 
 EOF on the slave tty is not reported back to the master.
@@ -181,7 +186,7 @@ Has the "feature" of returning EOF just once?!
 
 EOF on the slave tty is not reported back to the master.
 
-=item * Windows NT/2k (under Cygwin)
+=item * Windows NT/2k/XP (under Cygwin)
 
 When you send (print) a too long line (>160 chars) to a non-raw pty,
 the call just hangs forever and even alarm() cannot get you out.

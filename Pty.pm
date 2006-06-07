@@ -10,7 +10,7 @@ require POSIX;
 
 use vars qw(@ISA $VERSION);
 
-$VERSION = 1.04; # keep same as in Tty.pm
+$VERSION = 1.05; # keep same as in Tty.pm
 
 @ISA = qw(IO::Handle);
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
@@ -148,7 +148,7 @@ IO::Pty - Pseudo TTY object class
 
 =head1 VERSION
 
-1.04
+1.05
 
 =head1 SYNOPSIS
 

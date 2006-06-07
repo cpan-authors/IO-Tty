@@ -1,3 +1,9 @@
+2006-06-06   Roland Giersig  <rgiersig@cpan.org>
+
+	* v1.05
+
+	* Tty.xs: added includes <sys/pty.h>  and <sys/ptyio.h>
+
 2006-05-28   Roland Giersig  <rgiersig@cpan.org>
 
 	* v1.04
