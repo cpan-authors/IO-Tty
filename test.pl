@@ -62,7 +62,8 @@ print "Checking if child gets pty as controlling terminal...\n";
   my $pid = fork();
   die "Cannot fork" if not defined $pid;
   unless ($pid) {
-    # child 
+    # child
+    sleep(1);
     $master->make_slave_controlling_terminal();
     my $slave = $master->slave();
     close $master;

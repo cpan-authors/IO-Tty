@@ -1,4 +1,5 @@
 # Documentation at the __END__
+# -*-cperl-*-
 
 package IO::Tty;
 
@@ -12,8 +13,8 @@ require DynaLoader;
 
 use vars qw(@ISA $VERSION $XS_VERSION $CONFIG $DEBUG);
 
-$VERSION = 1.05;
-$XS_VERSION = "1.05";
+$VERSION = 1.06;
+$XS_VERSION = "1.06";
 @ISA = qw(IO::Handle);
 
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
@@ -50,10 +51,10 @@ sub open {
 
 sub clone_winsize_from {
   my ($self, $fh) = @_;
-  my $winsize = "";
   croak "Given filehandle is not a tty in clone_winsize_from, called"
     if not POSIX::isatty($fh);  
   return 1 if not POSIX::isatty($self);  # ignored for master ptys
+  my $winsize = " "x1024; # preallocate memory
   ioctl($fh, &IO::Tty::Constant::TIOCGWINSZ, $winsize)
     and ioctl($self, &IO::Tty::Constant::TIOCSWINSZ, $winsize)
       and return 1;
@@ -98,7 +99,7 @@ IO::Tty - Low-level allocate a pseudo-Tty, import constants.
 
 =head1 VERSION
 
-1.05
+1.06
 
 =head1 SYNOPSIS
 

@@ -1,3 +1,9 @@
+2006-07-15   Roland Giersig  <rgiersig@cpan.org>
+
+	* v1.06
+
+	* Tty.pm: pre-allocate buffer for ioctl
+
 2006-06-06   Roland Giersig  <rgiersig@cpan.org>
 
 	* v1.05
