@@ -1,3 +1,9 @@
+2006-07-18   Roland Giersig  <rgiersig@cpan.org>
+
+	* v1.07
+
+	* Tty.xs: added some more letter to BSD allocation
+
 2006-07-15   Roland Giersig  <rgiersig@cpan.org>
 
 	* v1.06

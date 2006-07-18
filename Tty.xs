@@ -664,7 +664,7 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	    char tbuf[64];
 	    int i;
 	    const char *ptymajors = "pqrstuvwxyzabcdefghijklmnoABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	    const char *ptyminors = "0123456789abcdef";
+	    const char *ptyminors = "0123456789abcdefghijklmnopqrstuv";
 	    int num_minors = strlen(ptyminors);
 	    int num_ptys = strlen(ptymajors) * num_minors;
 

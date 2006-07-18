@@ -7,7 +7,8 @@ To build this distribution, run
   make test
   make install
 
-This (v1.06) is a small bugfix-release. Fixed pre-allocation of ioctl buffer to make close_winsize_from work.
+This (v1.07) is a small enhancement-release. Added some more letters
+to the BSD minor allocation code.
 
 Please note that pty creation is very system-dependend, and there 
 are a *lot* of different systems out there.  If you have problems 

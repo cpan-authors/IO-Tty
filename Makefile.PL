@@ -12,7 +12,7 @@ $^W=1;
 
 my %define;
 my @libs;
-my $Package_Version = '1.06';  # keep this consistent with Tty.pm
+my $Package_Version = '1.07';  # keep this consistent with Tty.pm
 my $Is_Beta = ($Package_Version =~ m/_/);
 
 open(SUB, ">xssubs.c") or die "open: $!";
@@ -48,8 +48,12 @@ $define{'-DHAVE_DEV_PTC'} = undef
 $define{'-DHAVE_DEV_PTMX_BSD'} = undef
   if (-c "/dev/ptmx_bsd");
 
-$define{'-DHAVE_DEV_PTYM'} = undef
-  if (-d "/dev/ptym" and -d "/dev/pty");
+if (-d "/dev/ptym" and -d "/dev/pty") {
+  $define{'-DHAVE_DEV_PTYM'} = undef;
+  
+}
+
+
 
 
 # config tests go to a separate dir
