@@ -1,3 +1,9 @@
+2009-02-05   Roland Giersig  <rgiersig@cpan.org>
+
+	* v1.08
+
+	* Makefile.PL, Tty.xs: added support for posix_openpt(), thanks to Ed Schouten for providing a patch
+
 2006-07-18   Roland Giersig  <rgiersig@cpan.org>
 
 	* v1.07

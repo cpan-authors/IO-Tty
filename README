@@ -7,8 +7,8 @@ To build this distribution, run
   make test
   make install
 
-This (v1.07) is a small enhancement-release. Added some more letters
-to the BSD minor allocation code.
+This version (v1.08) now adds posix_openpt() as a means of allocating 
+the pty. 
 
 Please note that pty creation is very system-dependend, and there 
 are a *lot* of different systems out there.  If you have problems 
