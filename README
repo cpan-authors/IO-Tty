@@ -8,7 +8,7 @@ To build this distribution, run
   make install
 
 This version (v1.08) now adds posix_openpt() as a means of allocating 
-the pty. 
+the pty, thanks goes to Ed Schouten who provided a patch.
 
 Please note that pty creation is very system-dependend, and there 
 are a *lot* of different systems out there.  If you have problems 
@@ -43,4 +43,4 @@ their compile farm!
 
 
 Roland <RGiersig@cpan.org>
-2006-07-12
+2009-02-23
