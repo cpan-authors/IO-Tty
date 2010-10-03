@@ -30,9 +30,14 @@ diag("TCSETCTTY") if defined TCSETCTTY;
         close STDIN;
         close STDOUT;
         my $master = new IO::Pty;
-        my $slave  = $master->slave();
-        if ( $master->fileno < 3 or $slave->fileno < 3 ) {
-            die 'ERROR: masterfd=' . $master->fileno . ', slavefd=' . $slave->fileno . "\n";
+        my $slave = $master->slave();
+        
+        my $master_fileno = $master->fileno;
+        my $slave_fileno = $slave->fileno;
+        
+        $master->close();
+        if ($master_fileno < 3 or $slave_fileno < 3) { # altered
+            die("ERROR: masterfd=$master_fileno, slavefd=$slave_fileno"); # altered
         }
         exit(0);
     }
