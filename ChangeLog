@@ -1,6 +1,7 @@
 2010-09-10   Todd Rinaldo <toddr@cpan.org>
 	* RT 45008 - only try TIOCSCTTY if we don't have a ctty
-	
+	* RT 53883 - IO::Tty detection on BeOS w/fix
+
 2009-02-05   Roland Giersig  <rgiersig@cpan.org>
 
 	* v1.08

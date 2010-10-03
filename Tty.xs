@@ -710,6 +710,21 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 		if (*ptyfd >= 0 && open_slave(ptyfd, ttyfd, namebuf, namebuflen))
 		    break;
 
+		/* Try BeOS style naming */
+		sprintf(buf, "/dev/pt/%c%c",
+			ptymajors[i / num_minors],
+			ptyminors[i % num_minors]);
+		sprintf(tbuf, "/dev/tt/%c%c",
+			ptymajors[i / num_minors],
+			ptyminors[i % num_minors]);
+		if (strlcpy(namebuf, tbuf, namebuflen) >= namebuflen) {
+		  warn("ERROR: pty_allocate: ttyname truncated");
+		  return 0;
+		}
+		*ptyfd = open(buf, O_RDWR | O_NOCTTY);
+		if (*ptyfd >= 0 && open_slave(ptyfd, ttyfd, namebuf, namebuflen))
+		    break;
+
 		/* Try z/OS style naming */
 		sprintf(buf, "/dev/ptyp%04d", i);
 		sprintf(tbuf, "/dev/ttyp%04d", i);
