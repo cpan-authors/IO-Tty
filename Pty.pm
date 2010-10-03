@@ -115,13 +115,15 @@ sub make_slave_controlling_terminal {
   }
 
   # Acquire a controlling terminal if this doesn't happen automatically
-  if (defined TIOCSCTTY) {
-    if (not defined ioctl( ${*$self}{'io_pty_slave'}, TIOCSCTTY, 0 )) {
-      warn "warning: TIOCSCTTY failed, slave might not be set as controlling terminal: $!" if $^W;
-    }
-  } elsif (defined TCSETCTTY) {
-    if (not defined ioctl( ${*$self}{'io_pty_slave'}, TCSETCTTY, 0 )) {
-      warn "warning: TCSETCTTY failed, slave might not be set as controlling terminal: $!" if $^W;
+  if (not open(\*DEVTTY, "/dev/tty")) {
+    if (defined TIOCSCTTY) {
+      if (not defined ioctl( ${*$self}{'io_pty_slave'}, TIOCSCTTY, 0 )) {
+        warn "warning: TIOCSCTTY failed, slave might not be set as controlling terminal: $!" if $^W;
+      }
+    } elsif (defined TCSETCTTY) {
+      if (not defined ioctl( ${*$self}{'io_pty_slave'}, TCSETCTTY, 0 )) {
+        warn "warning: TCSETCTTY failed, slave might not be set as controlling terminal: $!" if $^W;
+      }
     }
   }
 
