@@ -1,4 +1,7 @@
 2010-09-10   Todd Rinaldo <toddr@cpan.org>
+	* Update all versions to the new version. bump to 1.08_02
+
+2010-09-10   Todd Rinaldo <toddr@cpan.org>
 	* RT 45008 - only try TIOCSCTTY if we don't have a ctty
 	* RT 53883 - IO::Tty detection on BeOS w/fix
 	* RT 60014 - better META.yml by modernizing Makefile.PL
