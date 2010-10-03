@@ -13,7 +13,7 @@ require DynaLoader;
 
 use vars qw(@ISA $VERSION $XS_VERSION $CONFIG $DEBUG);
 
-$VERSION = 1.08;
+$VERSION = '1.08_01';
 $XS_VERSION = "1.08";
 @ISA = qw(IO::Handle);
 
