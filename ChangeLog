@@ -1,5 +1,6 @@
 2010-10-02   Todd Rinaldo <toddr@cpan.org>
 	* RT 61642 - Fix file number test to work without hang on cygwin
+	* Bump to 1.08_03
 
 2010-09-10   Todd Rinaldo <toddr@cpan.org>
 	* Update all versions to the new version. bump to 1.08_02
