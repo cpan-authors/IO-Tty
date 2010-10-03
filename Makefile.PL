@@ -5,7 +5,7 @@ use IO::File;
 use Config qw(%Config);
 
 my $flags = "$Config{ccflags} $Config{ldflags}";
-$flags =~ s/([^A-Za-z0-9 -])/\\$1/g; # escape shell-metachars
+$flags =~ s/([^A-Za-z0-9 -_])/\\$1/g; # escape shell-metachars
 
 $|=1; # to see output immediately
 $^W=1;

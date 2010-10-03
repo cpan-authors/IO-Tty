@@ -2,6 +2,9 @@
 	* RT 45008 - only try TIOCSCTTY if we don't have a ctty
 	* RT 53883 - IO::Tty detection on BeOS w/fix
 	* RT 60014 - better META.yml by modernizing Makefile.PL
+	* RT 44771 - Add _ to list of escape characters for compiler
+	  so it'll compile on windows This is experimental pending a
+	  successful dev release
 	
 2009-02-05   Roland Giersig  <rgiersig@cpan.org>
 
