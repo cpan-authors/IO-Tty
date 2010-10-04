@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               IO-Tty
-version:            1.08_03
+version:            1.09
 abstract:           Pseudo ttys and constants
 author:
     - Roland Giersig <RGiersig@cpan.org>

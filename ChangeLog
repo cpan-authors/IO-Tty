@@ -1,3 +1,7 @@
+2010-10-04   Todd Rinaldo <toddr@cpan.org>
+	* CPAN testers looks clean. Internal testing done on perl 5.6
+	* Bump version to 1.09 and release to CPAN
+	
 2010-10-02   Todd Rinaldo <toddr@cpan.org>
 	* RT 61642 - Fix file number test to work without hang on cygwin
 	* Bump to 1.08_03
