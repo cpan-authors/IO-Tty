@@ -10,7 +10,7 @@ require POSIX;
 
 use vars qw(@ISA $VERSION);
 
-$VERSION = '1.09'; # keep same as in Tty.pm
+$VERSION = '1.09_01'; # keep same as in Tty.pm
 
 @ISA = qw(IO::Handle);
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
@@ -124,6 +124,9 @@ sub make_slave_controlling_terminal {
       if (not defined ioctl( ${*$self}{'io_pty_slave'}, TCSETCTTY, 0 )) {
         warn "warning: TCSETCTTY failed, slave might not be set as controlling terminal: $!" if $^W;
       }
+    } else {
+      warn "warning: You have neither TIOCSCTTY nor TCSETCTTY on your system\n" if $^W;
+      return 0;
     }
   }
 
@@ -150,7 +153,7 @@ IO::Pty - Pseudo TTY object class
 
 =head1 VERSION
 
-1.09
+1.09_01
 
 =head1 SYNOPSIS
 

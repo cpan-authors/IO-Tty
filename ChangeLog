@@ -1,4 +1,9 @@
 2010-10-04   Todd Rinaldo <toddr@cpan.org>
+	* RT 60788 - Better error reporting on Operating Systems
+	  that can't set a controlling terminal e.g. BeOS
+	* Bump to 1.09_01
+
+2010-10-04   Todd Rinaldo <toddr@cpan.org>
 	* CPAN testers looks clean. Internal testing done on perl 5.6
 	* Bump version to 1.09 and release to CPAN
 	
