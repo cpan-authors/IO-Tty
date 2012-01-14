@@ -62,6 +62,25 @@ sub clone_winsize_from {
   return undef;
 }
 
+# ioctl() doesn't tell us how long the structure is, so we'll have to trim it
+# after TIOCGWINSZ
+my $SIZEOF_WINSIZE = length IO::Tty::pack_winsize(0,0,0,0);
+
+sub get_winsize {
+  my $self = shift;
+  ioctl($self, IO::Tty::Constant::TIOCGWINSZ(), my $winsize)
+    or croak "Cannot TIOCGWINSZ - $!";
+  substr($winsize, $SIZEOF_WINSIZE) = "";
+  return IO::Tty::unpack_winsize($winsize);
+}
+
+sub set_winsize {
+  my $self = shift;
+  my $winsize = IO::Tty::pack_winsize(@_);
+  ioctl($self, IO::Tty::Constant::TIOCSWINSZ(), $winsize)
+    or croak "Cannot TIOCSWINSZ - $!";
+}
+
 sub set_raw($) {
   require POSIX;
   my $self = shift;

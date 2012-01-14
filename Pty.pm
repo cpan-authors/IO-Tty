@@ -141,6 +141,8 @@ sub make_slave_controlling_terminal {
 }
 
 *clone_winsize_from = \&IO::Tty::clone_winsize_from;
+*get_winsize = \&IO::Tty::get_winsize;
+*set_winsize = \&IO::Tty::set_winsize;
 *set_raw = \&IO::Tty::set_raw;
 
 1;
@@ -253,6 +255,17 @@ so if this method is called for a master that is not a tty, it
 silently returns OK.
 
 See the C<try> script for example code how to propagate SIGWINCH.
+
+=item get_winsize()
+
+Returns the terminal size, in a 4-element list.
+
+ ($row, $col, $xpixel, $ypixel) = $tty->get_winsize()
+
+=item set_winsize($row, $col, $xpixel, $ypixel)
+
+Sets the terminal size. If not specified, C<$xpixel> and C<$ypixel> are set to
+0.  As with C<clone_winsize_from>, this must be called upon the I<slave>.
 
 =back
 

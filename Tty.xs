@@ -803,6 +803,39 @@ InOutStream handle
     OUTPUT:
 	RETVAL
 
+SV *
+pack_winsize(row, col, xpixel = 0, ypixel = 0)
+	int row
+	int col
+	int xpixel
+	int ypixel
+    INIT:
+	struct winsize ws;
+    CODE:
+	ws.ws_row = row;
+	ws.ws_col = col;
+	ws.ws_xpixel = xpixel;
+	ws.ws_ypixel = ypixel;
+	RETVAL = newSVpvn((char *)&ws, sizeof(ws));
+    OUTPUT:
+	RETVAL
+
+void
+unpack_winsize(winsize)
+	SV *winsize;
+    INIT:
+	struct winsize ws;
+    PPCODE:
+	if(SvCUR(winsize) != sizeof(ws))
+	    croak("IO::Tty::unpack_winsize(): Bad arg length - got %d, expected %d",
+		SvCUR(winsize), sizeof(ws));
+	Copy(SvPV_nolen(winsize), &ws, sizeof(ws), char);
+	EXTEND(SP, 4);
+	PUSHs(sv_2mortal(newSViv(ws.ws_row)));
+	PUSHs(sv_2mortal(newSViv(ws.ws_col)));
+	PUSHs(sv_2mortal(newSViv(ws.ws_xpixel)));
+	PUSHs(sv_2mortal(newSViv(ws.ws_ypixel)));
+
 
 BOOT:
 {
