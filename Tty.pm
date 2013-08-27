@@ -263,8 +263,8 @@ E<lt>F<RGiersig@cpan.org>E<gt>.
 
 Contains copyrighted stuff from openssh v3.0p1, authored by Tatu
 Ylonen <ylo@cs.hut.fi>, Markus Friedl and Todd C. Miller
-<Todd.Miller@courtesan.com>.  I also got a lot of inspiry from the pty
-code in Xemacs.
+<Todd.Miller@courtesan.com>.  I also got a lot of inspiration from
+the pty code in Xemacs.
 
 
 =head1 COPYRIGHT
