@@ -415,7 +415,7 @@ WriteMakefile1(
     },
     'META_MERGE'     => {
 	'resources'    => {
-	    'repository'  => 'https://expectperl.svn.sourceforge.net/svnroot/expectperl/IO-Tty/trunk',
+	    'repository'  => 'https://github.com/toddr/IO-Tty',
 	},
     },
 );
