@@ -84,7 +84,7 @@ sub make_slave_controlling_terminal {
   my $self = shift;
   local(*DEVTTY);
 
-  # loose controlling terminal explicitely
+  # loose controlling terminal explicitly
   if (defined TIOCNOTTY) {
     if (open (\*DEVTTY, "/dev/tty")) {
       ioctl( \*DEVTTY, TIOCNOTTY, 0 );
