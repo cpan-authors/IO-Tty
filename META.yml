@@ -1,23 +1,23 @@
---- #YAML:1.0
-name:               IO-Tty
-version:            1.10
-abstract:           Pseudo ttys and constants
+---
+abstract: 'Pseudo ttys and constants'
 author:
-    - Roland Giersig <RGiersig@cpan.org>
-license:            perl
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
+  - 'Roland Giersig <RGiersig@cpan.org>'
 build_requires:
-    Test::More:  0
-requires:  {}
-resources:
-    repository:  https://expectperl.svn.sourceforge.net/svnroot/expectperl/IO-Tty/trunk
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.56
+  Test::More: 0
+configure_requires:
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.68, CPAN::Meta::Converter version 2.120921'
+license: perl
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: IO-Tty
+no_index:
+  directory:
+    - t
+    - inc
+requires: {}
+resources:
+  repository: https://github.com/toddr/IO-Tty
+version: 1.11

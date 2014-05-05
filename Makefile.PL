@@ -1,5 +1,11 @@
 use ExtUtils::MakeMaker;
 
+# Signal Testers that this is an unsupported platform.
+if ( $^O eq 'MSWin32' ) {
+    print "This module requires a POSIX compliant system to work. Try cygwin if you need this module on windows\n";
+    die "OS unsupported";
+}
+
 use strict;
 use IO::File;
 use Config qw(%Config);
@@ -12,7 +18,7 @@ $^W=1;
 
 my %define;
 my @libs;
-my $Package_Version = '1.10';  # keep this consistent with Tty.pm
+my $Package_Version = '1.11';  # keep this consistent with Tty.pm
 my $Is_Beta = ($Package_Version =~ m/_/);
 
 open(SUB, ">xssubs.c") or die "open: $!";
