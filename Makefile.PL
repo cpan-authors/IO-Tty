@@ -83,7 +83,7 @@ if (system("$Config{'cc'} $flags compilerok.c > compilerok.log 2>&1")) {
 
 ERROR: cannot run the configured compiler '$Config{'cc'}'
 (see conf/compilerok.log). Suggestions:
-1) The complier '$Config{'cc'}' is not in your PATH. Add it
+1) The compiler '$Config{'cc'}' is not in your PATH. Add it
    to the PATH and try again. OR
 2) The compiler isn't installed on your system. Install it. OR
 3) You only have a different compiler installed (e.g. 'gcc').
