@@ -34,11 +34,11 @@
          "requires" : {}
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "repository" : {
          "url" : "https://github.com/toddr/IO-Tty"
       }
    },
-   "version" : "1.11"
+   "version" : "1.11_01"
 }
