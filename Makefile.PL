@@ -10,7 +10,23 @@ use strict;
 use IO::File;
 use Config qw(%Config);
 
-my $flags = "$Config{ccflags} $Config{ldflags}";
+my %cfg;
+@cfg{qw(cc ccflags ldflags)} = @Config{qw(cc ccflags ldflags)};
+for my $arg (@ARGV) {
+  if ( /^(CC|CCFLAGS|LDFLAGS)=(.*)/i ) {
+    $cfg{lc($1)} = $2;
+  }
+}
+if ($ENV{PERL_MM_OPT}) {
+  # Split on whitespace just like EU::MM
+  for ( split ' ', $ENV{PERL_MM_OPT} ) {
+    if ( /^(CC|CCFLAGS|LDFLAGS)=(.*)/i ) {
+      $cfg{lc($1)} = $2;
+    }
+  }
+}
+
+my $flags = "$cfg{ccflags} $cfg{ldflags}";
 $flags =~ s/([^A-Za-z0-9 -_])/\\$1/g; # escape shell-metachars
 
 $|=1; # to see output immediately
@@ -78,12 +94,12 @@ int main () { return 0; }
 ESQ
 close(TST);
 
-if (system("$Config{'cc'} $flags compilerok.c > compilerok.log 2>&1")) {
+if (system("$cfg{'cc'} $flags compilerok.c > compilerok.log 2>&1")) {
   die <<"__EOT__";
 
-ERROR: cannot run the configured compiler '$Config{'cc'}'
+ERROR: cannot run the configured compiler '$cfg{'cc'}'
 (see conf/compilerok.log). Suggestions:
-1) The compiler '$Config{'cc'}' is not in your PATH. Add it
+1) The compiler '$cfg{'cc'}' is not in your PATH. Add it
    to the PATH and try again. OR
 2) The compiler isn't installed on your system. Install it. OR
 3) You only have a different compiler installed (e.g. 'gcc').
@@ -154,7 +170,7 @@ ESQ
 
   close(TST);
   print "Looking for $f()" . "." x (13-length($f)) . " ";
-  if (system("$Config{'cc'} $flags $funcs{$f} functest_$f.c > functest_$f.log 2>&1")) {
+  if (system("$cfg{'cc'} $flags $funcs{$f} functest_$f.c > functest_$f.log 2>&1")) {
     print "not found.\n";
   } else {
     $define{"-DHAVE_\U$f"} = undef;
@@ -181,7 +197,7 @@ int main () { return 0; }
 ESQ
   close(TST);
   print "Looking for $h" . "." x (15-length($h)) . " ";
-  if(system("$Config{'cc'} $flags headtest_$def.c > headtest_$def.log 2>&1")) {
+  if(system("$cfg{'cc'} $flags headtest_$def.c > headtest_$def.log 2>&1")) {
     print "not found.\n"
   }
   else {
@@ -259,7 +275,7 @@ choke me badly on line 29999
 __EOT__
   close(TST);
 
-  if (system("$Config{'cc'} $flags @{[keys %define]} ttsymtest_$s.c >ttsymtest_$s.log 2>&1")) {
+  if (system("$cfg{'cc'} $flags @{[keys %define]} ttsymtest_$s.c >ttsymtest_$s.log 2>&1")) {
     print SUB qq{newCONSTSUB(stash, "$s", newSV(0));\n};
     # now check if the symbol is defined (should have an error message
     # for line 29999 in the logfile)
