@@ -1,3 +1,6 @@
+2014-09-12 Todd Rinaldo <toddr@cpan.org> 1.12
+	* Merge pull request from Chris Williams (bingos) to fix "redefinition of typedef" errors with v5.19.4 and above
+
 2014-05-05 Todd Rinaldo <toddr@cpan.org>
 	* Release 1.11 to CPAN with explicit dropping of support for Win32 (we never supported it) - RT 77813
 	* Bump version to a devel release 1.11_01 for experimental work.
