@@ -359,6 +359,8 @@ print POD <<"_EOT_";
 
 package IO::Tty::Constant;
 
+our \$VERSION = '$Package_Version';
+
 use vars qw(\@ISA \@EXPORT_OK);
 require Exporter;
 
