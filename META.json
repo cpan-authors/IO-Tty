@@ -4,7 +4,7 @@
       "Roland Giersig <RGiersig@cpan.org>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.68, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 7.04, CPAN::Meta::Converter version 2.143240",
    "license" : [
       "perl_5"
    ],
@@ -34,11 +34,11 @@
          "requires" : {}
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "repository" : {
          "url" : "https://github.com/toddr/IO-Tty"
       }
    },
-   "version" : "1.12"
+   "version" : "1.13_01"
 }
