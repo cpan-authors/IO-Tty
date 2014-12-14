@@ -1,3 +1,6 @@
+2014-12-14 Todd Rinaldo <toddr@cpan.org> 1.13_01
+	* RT 91590 - Remove MAP_TARGET from Makefile.PL
+	
 2014-09-12 Todd Rinaldo <toddr@cpan.org> 1.12
 	* Merge pull request from Chris Williams (bingos) to fix "redefinition of typedef" errors with v5.19.4 and above
 

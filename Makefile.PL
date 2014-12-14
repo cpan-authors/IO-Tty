@@ -430,7 +430,6 @@ WriteMakefile1(
     'LIBS'           => join(" ", @libs),
     'clean'	     => {'FILES' => 'xssubs.c conf Tty.exp_old log'},
     'realclean'	     => {'FILES' => 'Tty IO-Tty.ppd'},
-    'MAP_TARGET'     => 'perltty',
     'AUTHOR'         => 'Roland Giersig <RGiersig@cpan.org>',
     'ABSTRACT'       => 'Pseudo ttys and constants',
     'LICENSE'        => 'perl',
