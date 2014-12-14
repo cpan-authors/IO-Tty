@@ -9,3 +9,5 @@
 /conf/
 /pm_to_blib
 /xssubs.c
+*.orig
+*.rej
