@@ -388,6 +388,8 @@ problems ('o').  Undefined or problematic constants are set to 'undef'.
 
 =head1 DEFINED CONSTANTS
 
+=over 4
+
 _EOT_
 
 foreach my $s (@ttsyms) {
@@ -402,6 +404,8 @@ foreach my $s (@ttsyms) {
 }
 
 print POD <<_EOT_;
+
+=back
 
 =head1 FOR MORE INFO SEE
 
