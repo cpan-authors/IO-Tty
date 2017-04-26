@@ -3,6 +3,7 @@
 
 package IO::Tty;
 
+use strict; use warnings;
 use IO::Handle;
 use IO::File;
 use IO::Tty::Constant;
