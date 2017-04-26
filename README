@@ -10,7 +10,7 @@ To build this distribution, run
 This version (v1.08) now adds posix_openpt() as a means of allocating 
 the pty, thanks goes to Ed Schouten who provided a patch.
 
-Please note that pty creation is very system-dependend, and there 
+Please note that pty creation is very system-dependent, and there 
 are a *lot* of different systems out there.  If you have problems 
 on your system, please send me (<RGiersig@cpan.org>) the output 
 of a manual installation ('perl Makefile.PL; make; make test;') 
