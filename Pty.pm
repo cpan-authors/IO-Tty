@@ -181,7 +181,7 @@ C<IO::Pty> provides an interface to allow the creation of a pseudo tty.
 C<IO::Pty> inherits from C<IO::Handle> and so provide all the methods
 defined by the C<IO::Handle> package.
 
-Please note that pty creation is very system-dependend.  If you have
+Please note that pty creation is very system-dependent.  If you have
 problems, see L<IO::Tty> for help.
 
 
