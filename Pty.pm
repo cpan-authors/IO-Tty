@@ -93,7 +93,7 @@ sub make_slave_controlling_terminal {
   }
 
   # Create a new 'session', lose controlling terminal.
-  if (not POSIX::setsid()) {
+  if (POSIX::setsid() == -1) {
     warn "setsid() failed, strange behavior may result: $!\r\n" if $^W;
   }
 
