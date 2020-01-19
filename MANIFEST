@@ -1,10 +1,12 @@
 ChangeLog
-MANIFEST
 Makefile.PL
+MANIFEST
+MANIFEST.SKIP
+META.json
+META.yml
 Pty.pm
 README
+t/test.t
+try
 Tty.pm
 Tty.xs
-try
-t/test.t
-META.yml                                 Module meta-data (added by MakeMaker)

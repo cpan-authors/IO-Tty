@@ -12,3 +12,4 @@
 *.orig
 *.rej
 IO-Tty.ppd
+/MANIFEST.bak
