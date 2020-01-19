@@ -6,6 +6,7 @@ META.json
 META.yml
 Pty.pm
 README.md
+t/pty_get_winsize.t
 t/test.t
 try
 Tty.pm
