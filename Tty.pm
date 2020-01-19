@@ -69,7 +69,7 @@ my $SIZEOF_WINSIZE = length IO::Tty::pack_winsize(0,0,0,0);
 
 sub get_winsize {
   my $self = shift;
-  ioctl($self, IO::Tty::Constant::TIOCGWINSZ(), my $winsize)
+  ioctl($self, IO::Tty::Constant::TIOCGWINSZ(), my $winsize = q<>)
     or croak "Cannot TIOCGWINSZ - $!";
   substr($winsize, $SIZEOF_WINSIZE) = "";
   return IO::Tty::unpack_winsize($winsize);
