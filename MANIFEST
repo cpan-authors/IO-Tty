@@ -5,7 +5,7 @@ MANIFEST.SKIP
 META.json
 META.yml
 Pty.pm
-README
+README.md
 t/test.t
 try
 Tty.pm
