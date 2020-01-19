@@ -2,8 +2,6 @@ ChangeLog
 Makefile.PL
 MANIFEST
 MANIFEST.SKIP
-META.json
-META.yml
 Pty.pm
 README.md
 t/pty_get_winsize.t
