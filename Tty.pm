@@ -14,8 +14,8 @@ require DynaLoader;
 
 use vars qw(@ISA $VERSION $XS_VERSION $CONFIG $DEBUG);
 
-$VERSION = '1.13_01';
-$XS_VERSION = "1.13_01";
+$VERSION = '1.14';
+$XS_VERSION = "1.14";
 @ISA = qw(IO::Handle);
 
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
@@ -119,7 +119,7 @@ IO::Tty - Low-level allocate a pseudo-Tty, import constants.
 
 =head1 VERSION
 
-1.13_01
+1.14
 
 =head1 SYNOPSIS
 
