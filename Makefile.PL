@@ -160,7 +160,7 @@ main ()
 #if defined (__stub_$f) || defined (__stub___$f)
 choke me
 #else
-f = $f;
+f = $f ();
 #endif
 
   ;
