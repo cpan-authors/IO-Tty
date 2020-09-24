@@ -8,6 +8,7 @@ if ( $^O eq 'MSWin32' ) {
 
 use strict;
 use IO::File;
+use File::Spec;
 use Config qw(%Config);
 
 my %cfg;
@@ -203,6 +204,33 @@ ESQ
   else {
     $headers{$h} = undef;
     $define{"-DHAVE_\U$def"} = $h;
+    if ( $h eq 'util.h' ) {
+        # Jump through hoops due to a header clash collision with perl
+        # The following is highly unportable.
+
+        # First, we need to figure out where the C compiler is looking
+        # for includes.
+        my $raw_cc_output = qx($cfg{'cc'} $flags -E -Wp,-v -xc /dev/null 2>&1);
+        my @cc_output = split /\n+/, $raw_cc_output;
+        my @inc_paths;
+        foreach my $maybe_inc_path ( @cc_output ) {
+            next unless $maybe_inc_path =~ /\A\s+/;
+            my (undef, $inc_path) = split /\s+/, $maybe_inc_path, 3;
+            push @inc_paths, $inc_path;
+        }
+
+        # With the list of include directories, try to find util.h
+        foreach my $inc_path ( @inc_paths ) {
+            my $abs_header_path = File::Spec->catfile($inc_path, 'util.h');
+            next unless -e $abs_header_path;
+            # Bingo!  Now we need to let the C compiler know, so that our XS
+            # file will include it.
+            # Again massively non-portable -- we ideally should be using something
+            # smart to quote the value.
+            $define{qq<-DUTIL_H_ABS_PATH=\\"$abs_header_path\\">} = $h if $abs_header_path;
+            last;
+        }
+    }
     print "FOUND.\n";
     unlink "headtest_$def.c", "headtest_$def.log";
   }
