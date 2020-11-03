@@ -13,3 +13,4 @@
 *.rej
 IO-Tty.ppd
 /MANIFEST.bak
+/IO-Tty*
