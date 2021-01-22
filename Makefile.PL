@@ -7,6 +7,8 @@ if ( $^O eq 'MSWin32' ) {
 }
 
 use strict;
+use warnings;
+
 use IO::File;
 use File::Spec;
 use Config qw(%Config);
@@ -470,7 +472,9 @@ WriteMakefile1(
     },
     'META_MERGE'     => {
 	'resources'    => {
-	    'repository'  => 'https://github.com/toddr/IO-Tty',
+            license => 'http://dev.perl.org/licenses/',
+            repository  => 'https://github.com/toddr/IO-Tty',
+            bugtracker => 'https://github.com/toddr/IO-Tty/issues',
 	},
     },
 );
