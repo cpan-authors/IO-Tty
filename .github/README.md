@@ -1,12 +1,10 @@
-[![](https://github.com/toddr/IO-Tty/workflows/linux/badge.svg)](https://github.com/toddr/IO-Tty/actions) [![](https://github.com/toddr/IO-Tty/workflows/macos/badge.svg)](https://github.com/toddr/IO-Tty/actions)
-
 # NAME
 
 IO::Tty - Low-level allocate a pseudo-Tty, import constants.
 
 # VERSION
 
-1.13\_01
+1.15
 
 # SYNOPSIS
 
@@ -19,7 +17,7 @@ IO::Tty - Low-level allocate a pseudo-Tty, import constants.
 `IO::Tty` is used internally by `IO::Pty` to create a pseudo-tty.
 You wouldn't want to use it directly except to import constants, use
 `IO::Pty`.  For a list of importable constants, see
-[IO::Tty::Constant](https://metacpan.org/pod/IO::Tty::Constant).
+[IO::Tty::Constant](https://metacpan.org/pod/IO%3A%3ATty%3A%3AConstant).
 
 Windows is now supported, but ONLY under the Cygwin
 environment, see [http://sources.redhat.com/cygwin/](http://sources.redhat.com/cygwin/).
@@ -111,7 +109,7 @@ If you have additions to these lists, please mail them to
 
 # SEE ALSO
 
-[IO::Pty](https://metacpan.org/pod/IO::Pty), [IO::Tty::Constant](https://metacpan.org/pod/IO::Tty::Constant)
+[IO::Pty](https://metacpan.org/pod/IO%3A%3APty), [IO::Tty::Constant](https://metacpan.org/pod/IO%3A%3ATty%3A%3AConstant)
 
 # MAILING LISTS
 
