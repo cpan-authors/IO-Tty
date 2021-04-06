@@ -16,7 +16,7 @@ use Config qw(%Config);
 my %cfg;
 @cfg{qw(cc ccflags ldflags)} = @Config{qw(cc ccflags ldflags)};
 for my $arg (@ARGV) {
-  if ( /^(CC|CCFLAGS|LDFLAGS)=(.*)/i ) {
+  if ( $arg =~ /^(CC|CCFLAGS|LDFLAGS)=(.*)/i ) {
     $cfg{lc($1)} = $2;
   }
 }
