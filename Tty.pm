@@ -71,7 +71,8 @@ my $SIZEOF_WINSIZE = length IO::Tty::pack_winsize( 0, 0, 0, 0 );
 
 sub get_winsize {
     my $self = shift;
-    ioctl( $self, IO::Tty::Constant::TIOCGWINSZ(), my $winsize = q<> )
+    my $winsize = " " x 1024;    # preallocate memory
+    ioctl( $self, IO::Tty::Constant::TIOCGWINSZ(), $winsize )
       or croak "Cannot TIOCGWINSZ - $!";
     substr( $winsize, $SIZEOF_WINSIZE ) = "";
     return IO::Tty::unpack_winsize($winsize);
