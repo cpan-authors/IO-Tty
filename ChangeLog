@@ -1,3 +1,9 @@
+1.17 2022-11-11 Todd Rinaldo <toddr@cpan.org>
+    * Switch changelog entries to metacpan friendly format
+    * #29 - Fix printf format conversion specifiers in croak to support size_t on all platforms
+    * #11,#30 - Tty.pm: pre-allocate buffer for ioctl but leave it length 0
+    * #28 - Use $arg to match @ARGV in Makefile.PL
+
 1.16 2021-01-2 Todd Rinaldo <toddr@cpan.org>
     * Switch to github for issue tracker.
     * Switch to testsuite CI workflow.
