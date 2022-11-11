@@ -4,7 +4,7 @@ IO::Tty - Low-level allocate a pseudo-Tty, import constants.
 
 # VERSION
 
-1.16
+1.17
 
 # SYNOPSIS
 
