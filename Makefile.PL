@@ -163,7 +163,8 @@ main ()
 #if defined (__stub_$f) || defined (__stub___$f)
 choke me
 #else
-f = $f ();
+f = $f;
+f();
 #endif
 
   ;
@@ -173,7 +174,7 @@ ESQ
 
   close(TST);
   print "Looking for $f()" . "." x (13-length($f)) . " ";
-  if (system("$cfg{'cc'} $flags $funcs{$f} functest_$f.c > functest_$f.log 2>&1")) {
+  if (system("$cfg{'cc'} $flags -Wl,--no-undefined $funcs{$f} functest_$f.c > functest_$f.log 2>&1")) {
     print "not found.\n";
   } else {
     $define{"-DHAVE_\U$f"} = undef;
