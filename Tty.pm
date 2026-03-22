@@ -103,6 +103,10 @@ sub set_raw($) {
     $termios->setiflag(0);
     $termios->setoflag(0);
     $termios->setlflag(0);
+    $termios->setcflag(
+        ( $termios->getcflag() & ~( &POSIX::CSIZE | &POSIX::PARENB ) )
+        | &POSIX::CS8
+    );
     $termios->setcc( &POSIX::VMIN,  1 );
     $termios->setcc( &POSIX::VTIME, 0 );
     unless ( $termios->setattr( $ttyno, &POSIX::TCSANOW ) ) {
