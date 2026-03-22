@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: perl -V
         run: perl -V
       - name: Install dependencies
@@ -67,7 +67,7 @@ jobs:
       image: perldocker/perl-tester:${{ matrix.perl-version }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: perl -V
         run: perl -V
       - name: Install dependencies
@@ -79,6 +79,46 @@ jobs:
       - run: make
       - run: make test
       - run: make install
+
+  # ------------------------------------------------------------------------
+
+  BSDs:
+    needs: [ubuntu, linux]
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - name: freebsd
+            version: '14.2'
+            pkginstall: pkg install -y p5-ExtUtils-MakeMaker
+
+          - name: openbsd
+            version: '7.6'
+            pkginstall: true
+
+          - name: netbsd
+            version: '10.1'
+            pkginstall: pkgin -y install perl || true
+
+    steps:
+      - uses: actions/checkout@v4
+        timeout-minutes: 5
+
+      - name: Test on ${{ matrix.os.name }}
+        uses: cross-platform-actions/action@v0.32.0
+        timeout-minutes: 15
+        with:
+          operating_system: ${{ matrix.os.name }}
+          version: ${{ matrix.os.version }}
+          shell: bash
+          run: |
+            sudo ${{ matrix.os.pkginstall }}
+            curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure .
+            perl Makefile.PL
+            make
+            prove -wlvmb t
 
   # ------------------------------------------------------------------------
 
@@ -94,7 +134,7 @@ jobs:
       PERL_CARTON_PATH: $GITHUB_WORKSPACE/local
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Perl
         run: brew install perl
       - name: perl -V
