@@ -143,6 +143,14 @@ sub make_slave_controlling_terminal {
     return 1;
 }
 
+sub DESTROY {
+    my $self = shift;
+    if ( exists ${*$self}{'io_pty_slave'} ) {
+        close ${*$self}{'io_pty_slave'};
+        delete ${*$self}{'io_pty_slave'};
+    }
+}
+
 *clone_winsize_from = \&IO::Tty::clone_winsize_from;
 *get_winsize        = \&IO::Tty::get_winsize;
 *set_winsize        = \&IO::Tty::set_winsize;
