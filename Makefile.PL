@@ -503,8 +503,8 @@ WriteMakefile1(
     'META_MERGE'     => {
 	'resources'    => {
             license => 'http://dev.perl.org/licenses/',
-            repository  => 'https://github.com/toddr/IO-Tty',
-            bugtracker => 'https://github.com/toddr/IO-Tty/issues',
+            repository  => 'https://github.com/cpan-authors/IO-Tty',
+            bugtracker => 'https://github.com/cpan-authors/IO-Tty/issues',
 	},
     },
 );

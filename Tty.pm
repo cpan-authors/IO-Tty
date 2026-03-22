@@ -126,7 +126,7 @@ IO::Tty - Low-level allocate a pseudo-Tty, import constants.
 
 =head1 VERSION
 
-1.20
+1.21
 
 =head1 SYNOPSIS
 
