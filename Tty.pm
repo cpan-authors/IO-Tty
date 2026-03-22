@@ -15,8 +15,8 @@ require DynaLoader;
 
 use vars qw(@ISA $VERSION $XS_VERSION $CONFIG $DEBUG);
 
-$VERSION    = '1.20';
-$XS_VERSION = "1.20";
+$VERSION    = '1.21';
+$XS_VERSION = "1.21";
 @ISA        = qw(IO::Handle);
 
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
