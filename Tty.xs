@@ -20,19 +20,6 @@ typedef FILE * InOutStream;
 
 #include "patchlevel.h"
 
-#if (PATCHLEVEL < 3) || ((PATCHLEVEL == 3) && (SUBVERSION < 22))
-     /* before 5.003_22 */
-#    define MY_start_subparse(fmt,flags) start_subparse()
-#else
-#  if (PATCHLEVEL == 3) && (SUBVERSION == 22)
-     /* 5.003_22 */
-#    define MY_start_subparse(fmt,flags) start_subparse(flags)
-#  else
-     /* 5.003_23  onwards */
-#    define MY_start_subparse(fmt,flags) start_subparse(fmt,flags)
-#  endif
-#endif
-
 /*
  * The following pty-allocation code was heavily inspired by its
  * counterparts in openssh 3.0p1 and Xemacs 21.4.5 but is a complete
@@ -620,11 +607,11 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	      fprintf(stderr, "trying CRAY /dev/pty/???...\n");
 #endif
 	    for (i = 0; i < highpty; i++) {
-		sprintf(buf, "/dev/pty/%03d", i);
+		snprintf(buf, sizeof(buf), "/dev/pty/%03d", i);
 		*ptyfd = open(buf, O_RDWR | O_NOCTTY);
 		if (*ptyfd < 0)
 		    continue;
-		sprintf(buf, "/dev/ttyp%03d", i);
+		snprintf(buf, sizeof(buf), "/dev/ttyp%03d", i);
 		if (strlcpy(namebuf, buf, namebuflen) >= namebuflen) {
 		  warn("ERROR: pty_allocate: ttyname truncated");
 		  return 0;
@@ -654,10 +641,10 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 #endif
 	    /* try /dev/ptym/pty[a-ce-z][0-9a-f] */
 	    for (i = 0; i < num_ptys; i++) {
-		sprintf(buf, "/dev/ptym/pty%c%c",
+		snprintf(buf, sizeof(buf), "/dev/ptym/pty%c%c",
 			 ptymajors[i / num_minors],
 			 ptyminors[i % num_minors]);
-		sprintf(tbuf, "/dev/pty/tty%c%c",
+		snprintf(tbuf, sizeof(tbuf), "/dev/pty/tty%c%c",
 			 ptymajors[i / num_minors],
 			 ptyminors[i % num_minors]);
 		if (strlcpy(namebuf, tbuf, namebuflen) >= namebuflen) {
@@ -682,10 +669,10 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	    num_minors = 100;
 	    num_ptys = strlen(ptymajors) * num_minors;
 	    for (i = 0; i < num_ptys; i++) {
-		sprintf(buf, "/dev/ptym/pty%c%02d",
+		snprintf(buf, sizeof(buf), "/dev/ptym/pty%c%02d",
 			 ptymajors[i / num_minors],
 			 i % num_minors);
-		sprintf(tbuf, "/dev/pty/tty%c%02d",
+		snprintf(tbuf, sizeof(tbuf), "/dev/pty/tty%c%02d",
 			 ptymajors[i / num_minors], i % num_minors);
 		if (strlcpy(namebuf, tbuf, namebuflen) >= namebuflen) {
 		  warn("ERROR: pty_allocate: ttyname truncated");
@@ -719,10 +706,10 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	      fprintf(stderr, "trying BSD /dev/pty??...\n");
 #endif
 	    for (i = 0; i < num_ptys; i++) {
-		sprintf(buf, "/dev/pty%c%c",
+		snprintf(buf, sizeof(buf), "/dev/pty%c%c",
 			ptymajors[i / num_minors],
 			ptyminors[i % num_minors]);
-		sprintf(tbuf, "/dev/tty%c%c",
+		snprintf(tbuf, sizeof(tbuf), "/dev/tty%c%c",
 			ptymajors[i / num_minors],
 			ptyminors[i % num_minors]);
 		if (strlcpy(namebuf, tbuf, namebuflen) >= namebuflen) {
@@ -734,8 +721,8 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 		    break;
 
 		/* Try SCO style naming */
-		sprintf(buf, "/dev/ptyp%d", i);
-		sprintf(tbuf, "/dev/ttyp%d", i);
+		snprintf(buf, sizeof(buf), "/dev/ptyp%d", i);
+		snprintf(tbuf, sizeof(tbuf), "/dev/ttyp%d", i);
 		if (strlcpy(namebuf, tbuf, namebuflen) >= namebuflen) {
 		  warn("ERROR: pty_allocate: ttyname truncated");
 		  return 0;
@@ -745,10 +732,10 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 		    break;
 
 		/* Try BeOS style naming */
-		sprintf(buf, "/dev/pt/%c%c",
+		snprintf(buf, sizeof(buf), "/dev/pt/%c%c",
 			ptymajors[i / num_minors],
 			ptyminors[i % num_minors]);
-		sprintf(tbuf, "/dev/tt/%c%c",
+		snprintf(tbuf, sizeof(tbuf), "/dev/tt/%c%c",
 			ptymajors[i / num_minors],
 			ptyminors[i % num_minors]);
 		if (strlcpy(namebuf, tbuf, namebuflen) >= namebuflen) {
@@ -760,8 +747,8 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 		    break;
 
 		/* Try z/OS style naming */
-		sprintf(buf, "/dev/ptyp%04d", i);
-		sprintf(tbuf, "/dev/ttyp%04d", i);
+		snprintf(buf, sizeof(buf), "/dev/ptyp%04d", i);
+		snprintf(tbuf, sizeof(tbuf), "/dev/ttyp%04d", i);
 		if (strlcpy(namebuf, tbuf, namebuflen) >= namebuflen) {
 		  warn("ERROR: pty_allocate: ttyname truncated");
 		  return 0;
@@ -801,7 +788,7 @@ pty_allocate()
 
     PPCODE:
 #ifdef PTY_DEBUG
-        debug = perl_get_sv("IO::Tty::DEBUG", FALSE);
+        debug = get_sv("IO::Tty::DEBUG", FALSE);
   	if (SvTRUE(debug))
           print_debug = 1;
 #endif
@@ -827,12 +814,12 @@ InOutStream handle
 	if (handle)
 	    RETVAL = ttyname(PerlIO_fileno(handle));
 	else {
-	    RETVAL = Nullch;
+	    RETVAL = NULL;
 	    errno = EINVAL;
 	}
 #else
 	warn("IO::Tty::ttyname not implemented on this architecture");
-	RETVAL = Nullch;
+	RETVAL = NULL;
 #endif
     OUTPUT:
 	RETVAL
@@ -877,7 +864,7 @@ BOOT:
   SV *config;
 
   stash = gv_stashpv("IO::Tty::Constant", TRUE);
-  config = perl_get_sv("IO::Tty::CONFIG", TRUE);    
+  config = get_sv("IO::Tty::CONFIG", TRUE);    
 #include "xssubs.c"
 }
 
