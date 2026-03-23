@@ -30,7 +30,471 @@ typedef FILE * InOutStream;
  *
  * mysignal and strlcpy were borrowed from openssh and have their
  * copyright messages attached.
+ *
+ * Windows ConPTY support added 2026.
  */
+
+#ifdef HAVE_CONPTY
+/*
+ * ===== Windows ConPTY implementation =====
+ *
+ * On Windows, we use the ConPTY (Pseudo Console) API available since
+ * Windows 10 version 1809.  ConPTY provides two unidirectional pipes
+ * (input and output) rather than a single bidirectional fd.  To maintain
+ * API compatibility with the POSIX pty interface (where the master fd
+ * supports both read and write), we create a loopback socket pair and
+ * spawn bridge threads that copy data between the socket and the ConPTY
+ * pipes.  The socket fd is returned as the "master" fd.
+ */
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <io.h>
+#include <process.h>
+
+/*
+ * Fallback declarations for ConPTY API.
+ *
+ * perl.h already includes <windows.h> on Win32, so we cannot
+ * retroactively raise _WIN32_WINNT.  Instead, provide our own
+ * declarations when the headers did not expose them — this is
+ * the case on older MinGW-w64 toolchains shipped with some
+ * Strawberry Perl versions.
+ *
+ * The functions themselves live in kernel32.dll and are linked
+ * via -lkernel32 (added in Makefile.PL).
+ */
+#ifndef PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE
+#define PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE \
+    ProcThreadAttributeValue(22, FALSE, TRUE, FALSE)
+typedef VOID* HPCON;
+WINBASEAPI HRESULT WINAPI CreatePseudoConsole(COORD, HANDLE, HANDLE, DWORD, HPCON*);
+WINBASEAPI HRESULT WINAPI ResizePseudoConsole(HPCON, COORD);
+WINBASEAPI VOID    WINAPI ClosePseudoConsole(HPCON);
+#endif
+
+/* ConPTY slot table: maps master fd -> ConPTY resources */
+#define MAX_CONPTY_SLOTS 64
+
+typedef struct {
+    int in_use;
+    int master_fd;           /* the socket fd returned to Perl */
+    HPCON hPC;               /* pseudo console handle */
+    HANDLE hPipeIn_W;        /* write end: parent writes input to console */
+    HANDLE hPipeOut_R;       /* read end: parent reads output from console */
+    HANDLE hBridgeRead;      /* bridge thread: ConPTY output -> socket */
+    HANDLE hBridgeWrite;     /* bridge thread: socket -> ConPTY input */
+    SOCKET sock_internal;    /* internal socket end (connected to bridge threads) */
+    SOCKET sock_master;      /* master socket end (converted to fd for Perl) */
+} conpty_slot_t;
+
+static conpty_slot_t conpty_slots[MAX_CONPTY_SLOTS];
+static int conpty_initialized = 0;
+
+static void
+conpty_init(void)
+{
+    if (!conpty_initialized) {
+        WSADATA wsaData;
+        WSAStartup(MAKEWORD(2, 2), &wsaData);
+        memset(conpty_slots, 0, sizeof(conpty_slots));
+        conpty_initialized = 1;
+    }
+}
+
+static conpty_slot_t *
+conpty_find_slot(int master_fd)
+{
+    int i;
+    for (i = 0; i < MAX_CONPTY_SLOTS; i++) {
+        if (conpty_slots[i].in_use && conpty_slots[i].master_fd == master_fd)
+            return &conpty_slots[i];
+    }
+    return NULL;
+}
+
+static conpty_slot_t *
+conpty_alloc_slot(void)
+{
+    int i;
+    for (i = 0; i < MAX_CONPTY_SLOTS; i++) {
+        if (!conpty_slots[i].in_use) {
+            memset(&conpty_slots[i], 0, sizeof(conpty_slot_t));
+            conpty_slots[i].in_use = 1;
+            return &conpty_slots[i];
+        }
+    }
+    return NULL;
+}
+
+/*
+ * Create a TCP loopback socket pair (Windows lacks socketpair()).
+ * Returns 0 on success, -1 on failure.
+ */
+static int
+win_socketpair(SOCKET pair[2])
+{
+    SOCKET listener;
+    struct sockaddr_in addr;
+    int addrlen = sizeof(addr);
+
+    pair[0] = pair[1] = INVALID_SOCKET;
+
+    listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (listener == INVALID_SOCKET)
+        return -1;
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+
+    if (bind(listener, (struct sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR)
+        goto fail;
+    if (getsockname(listener, (struct sockaddr *)&addr, &addrlen) == SOCKET_ERROR)
+        goto fail;
+    if (listen(listener, 1) == SOCKET_ERROR)
+        goto fail;
+
+    pair[0] = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (pair[0] == INVALID_SOCKET)
+        goto fail;
+    if (connect(pair[0], (struct sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR)
+        goto fail;
+
+    pair[1] = accept(listener, NULL, NULL);
+    if (pair[1] == INVALID_SOCKET)
+        goto fail;
+
+    closesocket(listener);
+    return 0;
+
+fail:
+    if (pair[0] != INVALID_SOCKET) closesocket(pair[0]);
+    if (pair[1] != INVALID_SOCKET) closesocket(pair[1]);
+    closesocket(listener);
+    pair[0] = pair[1] = INVALID_SOCKET;
+    return -1;
+}
+
+/*
+ * Bridge thread: reads from ConPTY output pipe, writes to socket.
+ * This runs until the pipe is closed or an error occurs.
+ */
+static unsigned __stdcall
+bridge_read_thread(void *arg)
+{
+    conpty_slot_t *slot = (conpty_slot_t *)arg;
+    char buf[4096];
+    DWORD bytesRead;
+
+    while (ReadFile(slot->hPipeOut_R, buf, sizeof(buf), &bytesRead, NULL)
+           && bytesRead > 0) {
+        int sent = 0;
+        while (sent < (int)bytesRead) {
+            int ret = send(slot->sock_internal, buf + sent,
+                          (int)(bytesRead - sent), 0);
+            if (ret <= 0) goto done;
+            sent += ret;
+        }
+    }
+done:
+    return 0;
+}
+
+/*
+ * Bridge thread: reads from socket, writes to ConPTY input pipe.
+ * This runs until the socket is closed or an error occurs.
+ */
+static unsigned __stdcall
+bridge_write_thread(void *arg)
+{
+    conpty_slot_t *slot = (conpty_slot_t *)arg;
+    char buf[4096];
+
+    while (1) {
+        int ret = recv(slot->sock_internal, buf, sizeof(buf), 0);
+        if (ret <= 0) break;
+        DWORD bytesWritten;
+        DWORD toWrite = (DWORD)ret;
+        DWORD written = 0;
+        while (written < toWrite) {
+            if (!WriteFile(slot->hPipeIn_W, buf + written,
+                          toWrite - written, &bytesWritten, NULL))
+                goto done;
+            written += bytesWritten;
+        }
+    }
+done:
+    return 0;
+}
+
+/*
+ * Windows ConPTY-based pty allocation.
+ *
+ * Creates a pseudo console with bridge threads to provide a single
+ * bidirectional socket fd as the "master".  The "slave" fd is set to -1
+ * since on Windows the slave side is internal to ConPTY and gets
+ * attached to child processes via spawn().
+ */
+static int
+allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
+{
+    HRESULT hr;
+    HPCON hPC = NULL;
+    HANDLE hPipeIn_R = INVALID_HANDLE_VALUE;
+    HANDLE hPipeIn_W = INVALID_HANDLE_VALUE;
+    HANDLE hPipeOut_R = INVALID_HANDLE_VALUE;
+    HANDLE hPipeOut_W = INVALID_HANDLE_VALUE;
+    SOCKET pair[2] = { INVALID_SOCKET, INVALID_SOCKET };
+    conpty_slot_t *slot;
+    COORD size;
+    static int conpty_counter = 0;
+
+    *ptyfd = -1;
+    *ttyfd = -1;
+    namebuf[0] = 0;
+
+    conpty_init();
+
+#if PTY_DEBUG
+    if (print_debug)
+        fprintf(stderr, "trying Windows ConPTY (CreatePseudoConsole)...\n");
+#endif
+
+    /* Create pipes for ConPTY I/O */
+    if (!CreatePipe(&hPipeIn_R, &hPipeIn_W, NULL, 0))
+        goto fail;
+    if (!CreatePipe(&hPipeOut_R, &hPipeOut_W, NULL, 0))
+        goto fail;
+
+    /* Create the pseudo console (default 80x24) */
+    size.X = 80;
+    size.Y = 24;
+    hr = CreatePseudoConsole(size, hPipeIn_R, hPipeOut_W, 0, &hPC);
+    if (FAILED(hr)) {
+#if PTY_DEBUG
+        if (print_debug)
+            fprintf(stderr, "CreatePseudoConsole failed: HRESULT 0x%lx\n",
+                    (unsigned long)hr);
+#endif
+        goto fail;
+    }
+
+    /* Close the pipe ends that ConPTY now owns internally */
+    CloseHandle(hPipeIn_R);
+    hPipeIn_R = INVALID_HANDLE_VALUE;
+    CloseHandle(hPipeOut_W);
+    hPipeOut_W = INVALID_HANDLE_VALUE;
+
+    /* Create a socket pair for the bidirectional master fd */
+    if (win_socketpair(pair) < 0) {
+#if PTY_DEBUG
+        if (print_debug)
+            fprintf(stderr, "win_socketpair failed\n");
+#endif
+        goto fail;
+    }
+
+    /* Allocate a tracking slot */
+    slot = conpty_alloc_slot();
+    if (!slot) {
+        warn("IO::Tty: too many ConPTY instances (max %d)", MAX_CONPTY_SLOTS);
+        goto fail;
+    }
+
+    slot->hPC = hPC;
+    slot->hPipeIn_W = hPipeIn_W;
+    slot->hPipeOut_R = hPipeOut_R;
+    slot->sock_internal = pair[0];
+    slot->sock_master = pair[1];
+
+    /* Start bridge threads */
+    slot->hBridgeRead = (HANDLE)_beginthreadex(NULL, 0,
+        bridge_read_thread, slot, 0, NULL);
+    slot->hBridgeWrite = (HANDLE)_beginthreadex(NULL, 0,
+        bridge_write_thread, slot, 0, NULL);
+
+    if (!slot->hBridgeRead || !slot->hBridgeWrite) {
+        slot->in_use = 0;
+        goto fail;
+    }
+
+    /* Convert the master socket to a C file descriptor */
+    *ptyfd = _open_osfhandle((intptr_t)pair[1], 0);
+    if (*ptyfd < 0) {
+        slot->in_use = 0;
+        goto fail;
+    }
+    slot->master_fd = *ptyfd;
+
+    /* On Windows, the slave is internal to ConPTY.  We return -1 for ttyfd
+     * and the Perl layer (IO::Pty) handles this specially. */
+    *ttyfd = -1;
+
+    /* Generate a synthetic tty name */
+    _snprintf(namebuf, namebuflen, "conpty%d", conpty_counter++);
+    namebuf[namebuflen - 1] = 0;
+
+#if PTY_DEBUG
+    if (print_debug)
+        fprintf(stderr, "ConPTY allocated: master_fd=%d name=%s\n",
+                *ptyfd, namebuf);
+#endif
+
+    return 1;
+
+fail:
+    if (hPC) ClosePseudoConsole(hPC);
+    if (hPipeIn_R != INVALID_HANDLE_VALUE) CloseHandle(hPipeIn_R);
+    if (hPipeIn_W != INVALID_HANDLE_VALUE) CloseHandle(hPipeIn_W);
+    if (hPipeOut_R != INVALID_HANDLE_VALUE) CloseHandle(hPipeOut_R);
+    if (hPipeOut_W != INVALID_HANDLE_VALUE) CloseHandle(hPipeOut_W);
+    if (pair[0] != INVALID_SOCKET) closesocket(pair[0]);
+    if (pair[1] != INVALID_SOCKET) closesocket(pair[1]);
+    return 0;
+}
+
+/*
+ * Windows-compatible winsize structure (struct winsize doesn't exist
+ * on Windows, but we need it for pack_winsize/unpack_winsize).
+ */
+struct winsize {
+    unsigned short ws_row;
+    unsigned short ws_col;
+    unsigned short ws_xpixel;
+    unsigned short ws_ypixel;
+};
+
+/*
+ * Resize a ConPTY pseudo console.
+ * Returns 1 on success, 0 on failure.
+ */
+static int
+conpty_resize(int master_fd, int rows, int cols)
+{
+    conpty_slot_t *slot = conpty_find_slot(master_fd);
+    if (slot && slot->hPC) {
+        COORD size;
+        size.X = (SHORT)cols;
+        size.Y = (SHORT)rows;
+        return SUCCEEDED(ResizePseudoConsole(slot->hPC, size));
+    }
+    return 0;
+}
+
+/*
+ * Clean up a ConPTY slot when the master fd is closed.
+ */
+static void
+conpty_close(int master_fd)
+{
+    conpty_slot_t *slot = conpty_find_slot(master_fd);
+    if (!slot) return;
+
+    if (slot->hPC) {
+        ClosePseudoConsole(slot->hPC);
+        slot->hPC = NULL;
+    }
+    if (slot->hPipeIn_W != INVALID_HANDLE_VALUE) {
+        CloseHandle(slot->hPipeIn_W);
+        slot->hPipeIn_W = INVALID_HANDLE_VALUE;
+    }
+    if (slot->hPipeOut_R != INVALID_HANDLE_VALUE) {
+        CloseHandle(slot->hPipeOut_R);
+        slot->hPipeOut_R = INVALID_HANDLE_VALUE;
+    }
+    /* Closing the internal socket will cause bridge threads to exit */
+    if (slot->sock_internal != INVALID_SOCKET) {
+        closesocket(slot->sock_internal);
+        slot->sock_internal = INVALID_SOCKET;
+    }
+    if (slot->hBridgeRead) {
+        WaitForSingleObject(slot->hBridgeRead, 1000);
+        CloseHandle(slot->hBridgeRead);
+        slot->hBridgeRead = NULL;
+    }
+    if (slot->hBridgeWrite) {
+        WaitForSingleObject(slot->hBridgeWrite, 1000);
+        CloseHandle(slot->hBridgeWrite);
+        slot->hBridgeWrite = NULL;
+    }
+    slot->in_use = 0;
+}
+
+/*
+ * Spawn a child process attached to a ConPTY.
+ * Returns the process ID on success, 0 on failure.
+ */
+static DWORD
+conpty_spawn(int master_fd, const char *command)
+{
+    conpty_slot_t *slot = conpty_find_slot(master_fd);
+    STARTUPINFOEXW si;
+    PROCESS_INFORMATION pi;
+    SIZE_T attrListSize = 0;
+    BOOL success;
+    wchar_t *wcmd = NULL;
+    int wlen;
+
+    if (!slot || !slot->hPC)
+        return 0;
+
+    memset(&si, 0, sizeof(si));
+    si.StartupInfo.cb = sizeof(STARTUPINFOEXW);
+
+    /* Allocate attribute list for ConPTY */
+    InitializeProcThreadAttributeList(NULL, 1, 0, &attrListSize);
+    si.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(
+        GetProcessHeap(), 0, attrListSize);
+    if (!si.lpAttributeList)
+        return 0;
+
+    if (!InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0,
+                                           &attrListSize)) {
+        HeapFree(GetProcessHeap(), 0, si.lpAttributeList);
+        return 0;
+    }
+
+    if (!UpdateProcThreadAttribute(si.lpAttributeList, 0,
+                                   PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
+                                   slot->hPC, sizeof(HPCON), NULL, NULL)) {
+        DeleteProcThreadAttributeList(si.lpAttributeList);
+        HeapFree(GetProcessHeap(), 0, si.lpAttributeList);
+        return 0;
+    }
+
+    /* Convert command to wide string */
+    wlen = MultiByteToWideChar(CP_UTF8, 0, command, -1, NULL, 0);
+    wcmd = (wchar_t *)HeapAlloc(GetProcessHeap(), 0,
+                                 wlen * sizeof(wchar_t));
+    if (!wcmd) {
+        DeleteProcThreadAttributeList(si.lpAttributeList);
+        HeapFree(GetProcessHeap(), 0, si.lpAttributeList);
+        return 0;
+    }
+    MultiByteToWideChar(CP_UTF8, 0, command, -1, wcmd, wlen);
+
+    memset(&pi, 0, sizeof(pi));
+    success = CreateProcessW(NULL, wcmd, NULL, NULL, FALSE,
+                             EXTENDED_STARTUPINFO_PRESENT, NULL, NULL,
+                             &si.StartupInfo, &pi);
+
+    DeleteProcThreadAttributeList(si.lpAttributeList);
+    HeapFree(GetProcessHeap(), 0, si.lpAttributeList);
+    HeapFree(GetProcessHeap(), 0, wcmd);
+
+    if (success) {
+        DWORD pid = pi.dwProcessId;
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+        return pid;
+    }
+
+    return 0;
+}
+
+#else /* !HAVE_CONPTY -- POSIX implementation */
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -232,7 +696,7 @@ char * ptsname(int);
 
 static int
 open_slave(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
-{ 
+{
     /*
      * now do some things that are supposedly healthy for ptys,
      * i.e. changing the access mode.
@@ -263,14 +727,14 @@ open_slave(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	}
 #endif /* HAVE_UNLOCKPT */
 	mysignal(SIGCHLD, old_signal);
-    } 
+    }
 #endif /* HAVE_GRANTPT || HAVE_UNLOCKPT */
- 
+
 
     /*
      * find the slave name, if we don't have it already
      */
-    
+
 #if defined (HAVE_PTSNAME_R)
     if (namebuf[0] == 0) {
 #if PTY_DEBUG
@@ -561,7 +1025,7 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	    break;
 	if (PL_dowarn)
 	    warn("pty_allocate(nonfatal): open(/dev/ptmx): %.100s", strerror(errno));
-#endif /* HAVE_DEV_PTMX */ 
+#endif /* HAVE_DEV_PTMX */
 
 #if defined(HAVE_DEV_PTYM_CLONE)
 #if PTY_DEBUG
@@ -600,12 +1064,12 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	    break;
 	if (PL_dowarn)
 	    warn("pty_allocate(nonfatal): open(/dev/ptmx_bsd): %.100s", strerror(errno));
-#endif /* HAVE_DEV_PTMX_BSD */ 
+#endif /* HAVE_DEV_PTMX_BSD */
 
 #endif /* !defined(HAVE_PTSNAME) && !defined(HAVE_PTSNAME_R) */
 
 	/*
-	 * we still don't have a pty, so try some oldfashioned stuff, 
+	 * we still don't have a pty, so try some oldfashioned stuff,
 	 * looking for a pty/tty pair ourself.
 	 */
 
@@ -614,7 +1078,7 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	    char buf[64];
 	    int i;
 	    int highpty;
-	    
+
 #ifdef _SC_CRAY_NPTY
 	    highpty = sysconf(_SC_CRAY_NPTY);
 	    if (highpty == -1)
@@ -656,7 +1120,7 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	    const char *ptyminors = "0123456789abcdef";
 	    int num_minors = strlen(ptyminors);
 	    int num_ptys = strlen(ptymajors) * num_minors;
-	    
+
 #if PTY_DEBUG
 	    if (print_debug)
 	      fprintf(stderr, "trying HPUX /dev/ptym/pty[a-ce-z][0-9a-f]...\n");
@@ -700,7 +1164,7 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 		  warn("ERROR: pty_allocate: ttyname truncated");
 		  return 0;
 		}
-		
+
 		if(stat(buf, &sb))
 		    break;	/* file does not exist, skip rest */
 		*ptyfd = open(buf, O_RDWR | O_NOCTTY);
@@ -793,6 +1257,8 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
     return 1;			/* whew, finally finished successfully */
 } /* end allocate_pty */
 
+#endif /* !HAVE_CONPTY */
+
 
 
 MODULE = IO::Tty	PACKAGE = IO::Pty
@@ -818,12 +1284,48 @@ pty_allocate()
 	if (ret) {
 	    name[sizeof(name)-1] = 0;
 	    EXTEND(SP,3);
-	    PUSHs(sv_2mortal(newSViv(ptyfd)));	
-	    PUSHs(sv_2mortal(newSViv(ttyfd)));	
-	    PUSHs(sv_2mortal(newSVpv(name, strlen(name))));	
+	    PUSHs(sv_2mortal(newSViv(ptyfd)));
+	    PUSHs(sv_2mortal(newSViv(ttyfd)));
+	    PUSHs(sv_2mortal(newSVpv(name, strlen(name))));
         } else {
 	    /* empty list */
 	}
+
+#ifdef HAVE_CONPTY
+
+void
+conpty_spawn_process(master_fd, command)
+	int master_fd
+	const char *command
+    PPCODE:
+	{
+	    DWORD pid = conpty_spawn(master_fd, command);
+	    if (pid > 0) {
+		EXTEND(SP, 1);
+		PUSHs(sv_2mortal(newSVuv(pid)));
+	    }
+	    /* else empty list */
+	}
+
+void
+conpty_resize_console(master_fd, rows, cols)
+	int master_fd
+	int rows
+	int cols
+    PPCODE:
+	{
+	    int ret = conpty_resize(master_fd, rows, cols);
+	    EXTEND(SP, 1);
+	    PUSHs(sv_2mortal(newSViv(ret)));
+	}
+
+void
+conpty_close_console(master_fd)
+	int master_fd
+    PPCODE:
+	conpty_close(master_fd);
+
+#endif /* HAVE_CONPTY */
 
 
 MODULE = IO::Tty	PACKAGE = IO::Tty
@@ -847,7 +1349,7 @@ char *
 ttyname(fh)
     SV * fh
     CODE:
-#ifdef HAVE_TTYNAME
+#if defined(HAVE_TTYNAME)
 	{
 	    IO *io = sv_2io(fh);
 	    PerlIO *f = io ? IoIFP(io) : NULL;
@@ -860,6 +1362,9 @@ ttyname(fh)
 		errno = EINVAL;
 	    }
 	}
+#elif defined(HAVE_CONPTY)
+	/* On Windows, ttyname is not available; return NULL */
+	RETVAL = Nullch;
 #else
 	warn("IO::Tty::ttyname not implemented on this architecture");
 	RETVAL = NULL;
@@ -907,7 +1412,7 @@ BOOT:
   SV *config;
 
   stash = gv_stashpv("IO::Tty::Constant", TRUE);
-  config = get_sv("IO::Tty::CONFIG", TRUE);    
+  config = get_sv("IO::Tty::CONFIG", TRUE);
 #include "xssubs.c"
 }
 
