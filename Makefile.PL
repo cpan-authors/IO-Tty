@@ -153,6 +153,11 @@ foreach my $f (sort keys %funcs) {
 #define _DARWIN_C_SOURCE
 #endif
 #endif
+#ifdef __sun
+#ifndef __EXTENSIONS__
+#define __EXTENSIONS__
+#endif
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
