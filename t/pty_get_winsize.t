@@ -5,7 +5,10 @@ use warnings;
 
 use Test::More;
 
-if ( $^O =~ m!^(solaris|nto|aix)$! ) {
+if ($^O eq 'MSWin32') {
+    plan skip_all => 'POSIX winsize ioctl tests not applicable on Windows';
+}
+elsif ( $^O =~ m!^(solaris|nto|aix)$! ) {
     plan skip_all => 'Problems on Solaris, QNX and AIX with this test';
 }
 else {

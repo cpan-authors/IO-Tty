@@ -4,6 +4,11 @@ use strict;
 use warnings;
 
 use Test::More;
+
+if ($^O eq 'MSWin32') {
+    plan skip_all => 'POSIX termios tests not applicable on Windows';
+}
+
 use IO::Pty;
 use POSIX;
 
