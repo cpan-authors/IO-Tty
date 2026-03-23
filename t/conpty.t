@@ -4,8 +4,10 @@
 # END/DESTROY, causing Test::Harness to see a non-zero exit despite
 # skip_all.  This END must be registered before any 'use' statements
 # so that it runs last (END blocks execute in LIFO order).
-my $_conpty_force_zero;
-BEGIN { eval q{ END { $? = 0 if $_conpty_force_zero } } }
+# Use a package variable so the END block (which compiles in its own
+# scope) can see the flag.
+our $_conpty_force_zero;
+END { $? = 0 if $_conpty_force_zero }
 
 use strict;
 use warnings;
