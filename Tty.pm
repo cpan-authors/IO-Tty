@@ -42,6 +42,10 @@ sub open {
 
 sub clone_winsize_from {
     my ( $self, $fh ) = @_;
+    if ($^O eq 'MSWin32') {
+        # On Windows, we cannot clone from another handle via ioctl.
+        return 1;
+    }
     croak "Given filehandle is not a tty in clone_winsize_from, called"
       if not POSIX::isatty($fh);
     return 1 if not POSIX::isatty($self);    # ignored for master ptys
@@ -60,6 +64,11 @@ my $SIZEOF_WINSIZE = length IO::Tty::pack_winsize( 0, 0, 0, 0 );
 
 sub get_winsize {
     my $self = shift;
+    if ($^O eq 'MSWin32') {
+        # On Windows, we don't have ioctl TIOCGWINSZ.
+        # Return a default size; the actual size is managed by ConPTY.
+        return (24, 80, 0, 0);
+    }
     my $winsize = " " x 1024;    # preallocate memory
     ioctl( $self, IO::Tty::Constant::TIOCGWINSZ(), $winsize )
       or croak "Cannot TIOCGWINSZ - $!";
@@ -69,12 +78,22 @@ sub get_winsize {
 
 sub set_winsize {
     my $self    = shift;
+    if ($^O eq 'MSWin32') {
+        # On Windows, use ConPTY ResizePseudoConsole
+        my ($row, $col) = @_;
+        return IO::Pty::conpty_resize_console( fileno($self),
+            $row || 24, $col || 80 );
+    }
     my $winsize = IO::Tty::pack_winsize(@_);
     ioctl( $self, IO::Tty::Constant::TIOCSWINSZ(), $winsize )
       or croak "Cannot TIOCSWINSZ - $!";
 }
 
 sub set_raw($) {
+    if ($^O eq 'MSWin32') {
+        # On Windows, ConPTY handles raw mode internally.
+        return 1;
+    }
     require POSIX;
     my $self = shift;
     return 1 if not POSIX::isatty($self);
@@ -131,8 +150,11 @@ You wouldn't want to use it directly except to import constants, use
 C<IO::Pty>.  For a list of importable constants, see
 L<IO::Tty::Constant>.
 
-Windows is now supported, but ONLY under the Cygwin
-environment, see L<http://sources.redhat.com/cygwin/>.
+Windows is supported under the Cygwin environment
+(see L<http://sources.redhat.com/cygwin/>) and experimentally on
+native Windows (Strawberry Perl, ActivePerl) via the ConPTY API,
+which requires Windows 10 version 1809 or later.  See L<IO::Pty>
+for Windows-specific usage details.
 
 Please note that pty creation is very system-dependend.  From my
 experience, any modern POSIX system should be fine.  Find below a list
@@ -211,6 +233,14 @@ the call just hangs forever and even alarm() cannot get you out.
 Don't complain to me...
 
 EOF on the slave tty is not reported back to the master.
+
+=item * Windows 10 1809+ (native, via ConPTY) B<EXPERIMENTAL>
+
+Native Windows support using the Pseudo Console (ConPTY) API.
+Works with Strawberry Perl and ActivePerl.  Requires Windows 10
+version 1809 (October 2018 Update) or later.  The API is different
+from POSIX: use C<$pty-E<gt>spawn()> instead of fork().
+See L<IO::Pty/"WINDOWS NOTES"> for details.
 
 =item * z/OS
 

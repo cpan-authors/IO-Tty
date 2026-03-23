@@ -3,7 +3,13 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More;
+
+if ($^O eq 'MSWin32') {
+    plan skip_all => 'Slave fd tests not applicable on Windows';
+}
+
+plan tests => 2;
 
 use IO::Pty;
 use Fcntl;

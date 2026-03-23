@@ -22,11 +22,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: perl -V
         run: perl -V
-      - name: Install dependencies
+      - name: Install Dependencies
         uses: perl-actions/install-with-cpm@v1
         with:
           cpanfile: "cpanfile"
-      - run: perl Makefile.PL
+      - name: Makefile.PL
+        run: perl Makefile.PL
       - run: make
       - run: make test
       - run: sudo make install
@@ -93,7 +94,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: perl -V
         run: perl -V
-      - name: Install dependencies
+      - name: Install Dependencies
         uses: perl-actions/install-with-cpm@v1
         with:
           cpanfile: "cpanfile"
@@ -146,8 +147,8 @@ jobs:
   # ------------------------------------------------------------------------
 
   macOS:
-    runs-on: macOS-latest
-    needs: [ubuntu]
+    needs: [ubuntu, linux, windows]
+    runs-on: macos-latest
 
     env:
       PERL_USE_UNSAFE_INC: 0
@@ -161,7 +162,7 @@ jobs:
         run: brew install perl
       - name: perl -V
         run: perl -V
-      - name: Install dependencies
+      - name: Install Dependencies
         uses: perl-actions/install-with-cpm@v1
         with:
           cpanfile: "cpanfile"
@@ -170,3 +171,37 @@ jobs:
         run: perl Makefile.PL
       - run: make
       - run: make test
+
+  # ------------------------------------------------------------------------
+
+  # ConPTY (CreatePseudoConsole) is available on windows-latest
+  # (Windows Server 2022, based on Windows 10 21H2+).
+  # ConPTY has been available since Windows 10 version 1809.
+  windows:
+    needs: [ubuntu, linux]
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Perl
+        run: |
+          choco install strawberryperl
+          echo @"
+          C:\strawberry\c\bin
+          C:\strawberry\perl\site\bin
+          C:\strawberry\perl\bin
+          "@ |
+            Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: perl -V
+        run: perl -V
+      - name: Install Dependencies
+        uses: perl-actions/install-with-cpm@v1
+        with:
+          sudo: false
+          cpanfile: "cpanfile"
+      - name: perl Makefile.PL
+        run: perl Makefile.PL
+      - name: make
+        run: gmake
+      - name: Run Tests
+        run: gmake test
