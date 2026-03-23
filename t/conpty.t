@@ -22,7 +22,7 @@ use IO::Pty;
 my $pty = eval { IO::Pty->new };
 if (!$pty) {
     $_conpty_force_zero = 1;
-    BAIL_OUT("Cannot open a pty on this Windows host: $@");
+    plan skip_all => "Cannot open a pty on this Windows host: $@";
 }
 
 plan tests => 4;
