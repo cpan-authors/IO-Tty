@@ -1,5 +1,12 @@
 #!perl
 
+# Force clean exit when skipping: ConPTY cleanup can set $? in
+# END/DESTROY, causing Test::Harness to see a non-zero exit despite
+# skip_all.  This END must be registered before any 'use' statements
+# so that it runs last (END blocks execute in LIFO order).
+my $_conpty_force_zero;
+BEGIN { eval q{ END { $? = 0 if $_conpty_force_zero } } }
+
 use strict;
 use warnings;
 
@@ -14,11 +21,8 @@ use IO::Pty;
 # Test 1: basic pty creation
 my $pty = eval { IO::Pty->new };
 if (!$pty) {
-    my $reason = "Cannot open a pty on this Windows host: $@";
-    # Force clean exit: ConPTY cleanup can set $? in END/DESTROY,
-    # causing Test::Harness to see a non-zero exit despite skip_all.
-    END { $? = 0 if !$pty }
-    plan skip_all => $reason;
+    $_conpty_force_zero = 1;
+    plan skip_all => "Cannot open a pty on this Windows host: $@";
 }
 
 plan tests => 4;
