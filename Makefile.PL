@@ -45,10 +45,6 @@ open(SUB, ">xssubs.c") or die "open: $!";
 warn "WARNING: perl versions prior to 5.8 are untested and may have problems.\n"
   if $] < 5.008;
 
-# improve backward-compatibility
-@define{qw(-DPL_sv_undef=sv_undef -DPL_dowarn=dowarn)} = (undef, undef)
-  if $] < 5.004_05;
-
 print <<_EOT_;
 Now let's see what we can find out about your system
 (logfiles of failing tests are available in the conf/ dir)...
@@ -497,6 +493,7 @@ WriteMakefile1(
     'AUTHOR'         => 'Roland Giersig <RGiersig@cpan.org>',
     'ABSTRACT'       => 'Pseudo ttys and constants',
     'LICENSE'        => 'perl',
+    'MIN_PERL_VERSION' => '5.008001',
     'BUILD_REQUIRES' =>  {
 	'Test::More' => 0,  # For testing
     },
@@ -510,8 +507,6 @@ WriteMakefile1(
 );
 
 sub MY::postamble {
-
-  return '' unless $] >= 5.00503;
 
 <<'ESQ';
 
@@ -537,9 +532,6 @@ sub WriteMakefile1 {  #Written by Alexandr Ciornii, version 0.21. Added by eumm-
   delete $params{META_MERGE} if $eumm_version < 6.46;
   delete $params{META_ADD} if $eumm_version < 6.46;
   delete $params{LICENSE} if $eumm_version < 6.31;
-  delete $params{AUTHOR} if $] < 5.005;
-  delete $params{ABSTRACT_FROM} if $] < 5.005;
-  delete $params{BINARY_LOCATION} if $] < 5.005;
 
   WriteMakefile(%params);
 }
