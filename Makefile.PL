@@ -42,9 +42,6 @@ my $Is_Beta = ($Package_Version =~ m/_/);
 
 open(SUB, ">xssubs.c") or die "open: $!";
 
-warn "WARNING: perl versions prior to 5.8 are untested and may have problems.\n"
-  if $] < 5.008;
-
 print <<_EOT_;
 Now let's see what we can find out about your system
 (logfiles of failing tests are available in the conf/ dir)...
@@ -498,7 +495,7 @@ WriteMakefile1(
     'AUTHOR'         => 'Roland Giersig <RGiersig@cpan.org>',
     'ABSTRACT'       => 'Pseudo ttys and constants',
     'LICENSE'        => 'perl',
-    'MIN_PERL_VERSION' => '5.008001',
+    'MIN_PERL_VERSION' => '5.008008',
     'BUILD_REQUIRES' =>  {
 	'Test::More' => 0,  # For testing
     },

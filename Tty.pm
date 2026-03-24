@@ -3,6 +3,8 @@
 
 package IO::Tty;
 
+use 5.008008;
+
 use strict;
 use warnings;
 use IO::Handle;
@@ -11,7 +13,6 @@ use IO::Tty::Constant;
 use Carp;
 
 require POSIX;
-require DynaLoader;
 
 use vars qw(@ISA $VERSION $XS_VERSION $CONFIG $DEBUG);
 
@@ -22,20 +23,8 @@ $XS_VERSION = "1.21";
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
 push @ISA, "IO::Stty" if ( not $@ );    # if IO::Stty is installed
 
-BOOT_XS: {
-    # If I inherit DynaLoader then I inherit AutoLoader and I DON'T WANT TO
-    require DynaLoader;
-
-    # DynaLoader calls dl_load_flags as a static method.
-    *dl_load_flags = DynaLoader->can('dl_load_flags');
-
-    do {
-        defined(&bootstrap)
-          ? \&bootstrap
-          : \&DynaLoader::bootstrap;
-      }
-      ->(__PACKAGE__);
-}
+use XSLoader;
+XSLoader::load(__PACKAGE__, $XS_VERSION);
 
 sub import {
     IO::Tty::Constant->export_to_level( 1, @_ );
