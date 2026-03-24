@@ -69,7 +69,7 @@ sub slave {
 
     my $tty = ${*$master}{'io_pty_ttyname'};
 
-    my $slave = new IO::Tty;
+    my $slave = IO::Tty->new;
 
     $slave->open( $tty, O_RDWR | O_NOCTTY )
       || croak "Cannot open slave $tty: $!";
@@ -103,7 +103,7 @@ sub make_slave_controlling_terminal {
 
     # now open slave, this should set it as controlling tty on some systems
     my $ttyname = ${*$self}{'io_pty_ttyname'};
-    my $slv     = new IO::Tty;
+    my $slv     = IO::Tty->new;
     $slv->open( $ttyname, O_RDWR )
       or croak "Cannot open slave $ttyname: $!";
 
@@ -172,7 +172,7 @@ IO::Pty - Pseudo TTY object class
 
     use IO::Pty;
 
-    $pty = new IO::Pty;
+    $pty = IO::Pty->new;
 
     $slave  = $pty->slave;
 
