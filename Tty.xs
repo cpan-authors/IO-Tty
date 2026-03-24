@@ -295,6 +295,8 @@ open_slave(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	if (name) {
 	    if(strlcpy(namebuf, name, namebuflen) >= namebuflen) {
 	      warn("ERROR: IO::Tty::open_slave: ttyname truncated");
+	      close(*ptyfd);
+	      *ptyfd = -1;
 	      return 0;
 	    }
 	} else {
@@ -304,8 +306,11 @@ open_slave(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
     }
 #endif /* HAVE_PTSNAME */
 
-    if (namebuf[0] == 0)
+    if (namebuf[0] == 0) {
+	close(*ptyfd);
+	*ptyfd = -1;
 	return 0;		/* we failed to get the slave name */
+    }
 
 #if defined (__SVR4) && defined (__sun)
        #include <sys/types.h>
@@ -325,14 +330,20 @@ open_slave(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 #endif
 		if (setuid(uid)) {
 		    warn("ERROR: IO::Tty::open_slave: couldn't seteuid to root: %d", errno);
+		    close(*ptyfd);
+		    *ptyfd = -1;
 		    return 0;
 		}
 		if (chown(namebuf, euid, -1)) {
 		    warn("ERROR: IO::Tty::open_slave: couldn't fchown the pty: %d", errno);
+		    close(*ptyfd);
+		    *ptyfd = -1;
 		    return 0;
 		}
 		if (seteuid(euid)) {
 		    warn("ERROR: IO::Tty::open_slave: couldn't seteuid back: %d", errno);
+		    close(*ptyfd);
+		    *ptyfd = -1;
 		    return 0;
 		}
            }
@@ -360,6 +371,7 @@ open_slave(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	warn("IO::Tty::open_slave(nonfatal): open(%.200s): %.100s",
 	     namebuf, strerror(errno));
       close(*ptyfd);
+      *ptyfd = -1;
       return 0;		/* too bad, couldn't open slave side */
     }
 
@@ -457,12 +469,13 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	    if (slave != NULL) {
 	        if (strlcpy(namebuf, slave, namebuflen) >= namebuflen) {
 		  warn("ERROR: pty_allocate: ttyname truncated");
+		  close(*ptyfd);
+		  *ptyfd = -1;
 		  return 0;
 		}
 		if (open_slave(ptyfd, ttyfd, namebuf, namebuflen))
 		    break;
-		close(*ptyfd);
-		*ptyfd = -1;
+		/* open_slave closes *ptyfd on failure */
 	    } else {
 		if (PL_dowarn)
 		    warn("pty_allocate(nonfatal): _getpty(): %.100s", strerror(errno));
@@ -518,9 +531,16 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 	    if (ret >= 0 && *ptyfd >= 0) {
 		if (open_slave(ptyfd, ttyfd, namebuf, namebuflen))
 		    break;
+		/* open_slave closes *ptyfd on failure;
+		   close *ttyfd which openpty() opened */
+		if (*ttyfd >= 0) {
+		    close(*ttyfd);
+		    *ttyfd = -1;
+		}
+	    } else {
+		*ptyfd = -1;
+		*ttyfd = -1;
 	    }
-	    *ptyfd = -1;
-	    *ttyfd = -1;
 	    if (PL_dowarn)
 		warn("pty_allocate(nonfatal): openpty(): %.100s", strerror(errno));
 	}
@@ -614,6 +634,8 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
 		snprintf(buf, sizeof(buf), "/dev/ttyp%03d", i);
 		if (strlcpy(namebuf, buf, namebuflen) >= namebuflen) {
 		  warn("ERROR: pty_allocate: ttyname truncated");
+		  close(*ptyfd);
+		  *ptyfd = -1;
 		  return 0;
 		}
 		break;
