@@ -109,6 +109,8 @@ sub set_raw($) {
 
 __END__
 
+=for markdown [![testsuite](https://github.com/cpan-authors/IO-Tty/actions/workflows/testsuite.yml/badge.svg)](https://github.com/cpan-authors/IO-Tty/actions/workflows/testsuite.yml)
+
 =head1 NAME
 
 IO::Tty - Low-level allocate a pseudo-Tty, import constants.
