@@ -80,7 +80,7 @@ sub set_raw($) {
     my $self = shift;
     return 1 if not POSIX::isatty($self);
     my $ttyno   = fileno($self);
-    my $termios = new POSIX::Termios;
+    my $termios = POSIX::Termios->new;
     unless ($termios) {
         warn "set_raw: new POSIX::Termios failed: $!";
         return undef;
