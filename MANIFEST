@@ -4,6 +4,7 @@ MANIFEST			This list of files
 MANIFEST.SKIP
 Pty.pm
 README
+t/clone_winsize.t
 t/constants.t
 t/pty_destroy.t
 t/pty_get_winsize.t
