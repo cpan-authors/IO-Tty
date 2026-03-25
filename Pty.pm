@@ -10,7 +10,7 @@ use IO::File;
 require POSIX;
 
 our @ISA     = qw(IO::Handle);
-our $VERSION = '1.22';    # keep same as in Tty.pm
+our $VERSION = '1.23';    # keep same as in Tty.pm
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
 push @ISA, "IO::Stty" if ( not $@ );    # if IO::Stty is installed
 
@@ -164,7 +164,7 @@ IO::Pty - Pseudo TTY object class
 
 =head1 VERSION
 
-1.22
+1.23
 
 =head1 SYNOPSIS
 

@@ -1,3 +1,22 @@
+1.23 2026-03-24 Todd Rinaldo <toddr@cpan.org>
+
+  Bug Fixes:
+    * PR #52 - Replace deprecated indirect object syntax (e.g. `new IO::Pty`)
+      with direct method calls (`IO::Pty->new`). Perl 5.36+ disables indirect
+      object calls, so this fixes forward compatibility.
+
+  Improvements:
+    * PR #53 - Add clone_winsize_from() test coverage (7 new tests) covering
+      basic clone between slave ttys, non-tty master fast path, croak on
+      non-tty source, and pixel dimension preservation.
+
+  Maintenance:
+    * PR #52 - Regenerate README from POD to fix stale version.
+    * PR #53 - Modernize `use vars` to `our` declarations in Tty.pm and
+      Pty.pm. Add missing `use warnings` to Pty.pm.
+    * Add AI_POLICY.md for transparency on AI-assisted contributions.
+    * Convert README to Markdown and update MANIFEST.
+
 1.22 2026-03-24 Todd Rinaldo <toddr@cpan.org>
 
   Bug Fixes:
