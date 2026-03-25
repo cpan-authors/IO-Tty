@@ -3,16 +3,14 @@
 package IO::Pty;
 
 use strict;
+use warnings;
 use Carp;
 use IO::Tty qw(TIOCSCTTY TCSETCTTY TIOCNOTTY);
 use IO::File;
 require POSIX;
 
-use vars qw(@ISA $VERSION);
-
-$VERSION = '1.22';    # keep same as in Tty.pm
-
-@ISA = qw(IO::Handle);
+our @ISA     = qw(IO::Handle);
+our $VERSION = '1.22';    # keep same as in Tty.pm
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
 push @ISA, "IO::Stty" if ( not $@ );    # if IO::Stty is installed
 

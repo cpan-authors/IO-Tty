@@ -14,11 +14,10 @@ use Carp;
 
 require POSIX;
 
-use vars qw(@ISA $VERSION $XS_VERSION $CONFIG $DEBUG);
-
-$VERSION    = '1.22';
-$XS_VERSION = "1.22";
-@ISA        = qw(IO::Handle);
+our @ISA        = qw(IO::Handle);
+our $VERSION    = '1.22';
+our $XS_VERSION = '1.22';
+our ( $CONFIG, $DEBUG );
 
 eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
 push @ISA, "IO::Stty" if ( not $@ );    # if IO::Stty is installed
