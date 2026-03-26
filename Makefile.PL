@@ -155,6 +155,11 @@ foreach my $f (sort keys %funcs) {
 #define __EXTENSIONS__
 #endif
 #endif
+#ifdef __FreeBSD__
+#ifndef __BSD_VISIBLE
+#define __BSD_VISIBLE 1
+#endif
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
