@@ -844,15 +844,21 @@ _open_tty(ttyname)
 	RETVAL
 
 char *
-ttyname(handle)
-InOutStream handle
+ttyname(fh)
+    SV * fh
     CODE:
 #ifdef HAVE_TTYNAME
-	if (handle)
-	    RETVAL = ttyname(PerlIO_fileno(handle));
-	else {
-	    RETVAL = NULL;
-	    errno = EINVAL;
+	{
+	    IO *io = sv_2io(fh);
+	    PerlIO *f = io ? IoIFP(io) : NULL;
+	    if (!f && io)
+		f = IoOFP(io);
+	    if (f)
+		RETVAL = ttyname(PerlIO_fileno(f));
+	    else {
+		RETVAL = NULL;
+		errno = EINVAL;
+	    }
 	}
 #else
 	warn("IO::Tty::ttyname not implemented on this architecture");
