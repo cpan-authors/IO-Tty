@@ -67,10 +67,15 @@ sub slave {
 
     my $tty = ${*$master}{'io_pty_ttyname'};
 
-    my $slave = IO::Tty->new;
+    my $slave_fd = IO::Tty::_open_tty($tty);
+    croak "Cannot open slave $tty: $!" if $slave_fd < 0;
 
-    $slave->open( $tty, O_RDWR | O_NOCTTY )
-      || croak "Cannot open slave $tty: $!";
+    my $slave = IO::Tty->new_from_fd( $slave_fd, "r+" );
+    croak "Cannot create IO::Tty from fd $slave_fd: $!" if not $slave;
+    $slave->autoflush(1);
+
+    ${*$slave}{'io_tty_ttyname'}    = $tty;
+    ${*$master}{'io_pty_slave'}     = $slave;
 
     return $slave;
 }
