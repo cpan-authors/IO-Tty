@@ -11,7 +11,7 @@ require POSIX;
 
 our @ISA     = qw(IO::Handle);
 our $VERSION = '1.23';    # keep same as in Tty.pm
-eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
+eval { local $^W = 0; local $SIG{__DIE__}; require IO::Stty };
 push @ISA, "IO::Stty" if ( not $@ );    # if IO::Stty is installed
 
 sub new {

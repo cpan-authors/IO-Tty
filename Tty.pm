@@ -19,7 +19,7 @@ our $VERSION    = '1.23';
 our $XS_VERSION = '1.23';
 our ( $CONFIG, $DEBUG );
 
-eval { local $^W = 0; undef local $SIG{__DIE__}; require IO::Stty };
+eval { local $^W = 0; local $SIG{__DIE__}; require IO::Stty };
 push @ISA, "IO::Stty" if ( not $@ );    # if IO::Stty is installed
 
 use XSLoader;
