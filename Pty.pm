@@ -13,7 +13,7 @@ use IO::File;
 require POSIX if $^O ne 'MSWin32';
 
 our @ISA     = qw(IO::Handle);
-our $VERSION = '1.23';    # keep same as in Tty.pm
+our $VERSION = '1.24';    # keep same as in Tty.pm
 
 my $is_windows = ($^O eq 'MSWin32');
 
@@ -223,7 +223,7 @@ IO::Pty - Pseudo TTY object class
 
 =head1 VERSION
 
-1.23
+1.24
 
 =head1 SYNOPSIS
 
