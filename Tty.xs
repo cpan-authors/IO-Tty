@@ -128,6 +128,24 @@ conpty_alloc_slot(void)
 }
 
 /*
+ * Undo XSUB.h socket-API macros.
+ *
+ * XSUB.h (un)helpfully redefines socket(), bind(), etc. with versions
+ * that return fds instead of SOCKETs.  We need the real Winsock
+ * functions here because we work with SOCKET handles directly and
+ * convert to an fd only at the very end via _open_osfhandle().
+ * Also undef send/recv so the bridge threads use the real Winsock calls.
+ */
+#undef socket
+#undef bind
+#undef getsockname
+#undef listen
+#undef connect
+#undef accept
+#undef send
+#undef recv
+
+/*
  * Create a TCP loopback socket pair (Windows lacks socketpair()).
  * Returns 0 on success, -1 on failure.
  */

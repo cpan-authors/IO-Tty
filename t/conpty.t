@@ -21,10 +21,12 @@ if ($^O ne 'MSWin32') {
 use IO::Pty;
 
 # Test 1: basic pty creation
+# If ConPTY fails on Windows, BAIL_OUT — nothing else in the test suite
+# will work either (per review feedback from @toddr).
 my $pty = eval { IO::Pty->new };
 if (!$pty) {
     $_conpty_force_zero = 1;
-    plan skip_all => "Cannot open a pty on this Windows host: $@";
+    BAIL_OUT("Cannot open a pty on this Windows host: $@");
 }
 
 plan tests => 4;
