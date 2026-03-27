@@ -37,7 +37,7 @@ $^W=1;
 
 my %define;
 my @libs;
-my $Package_Version = '1.23';  # keep this consistent with Tty.pm
+my $Package_Version = '1.24';  # keep this consistent with Tty.pm
 my $Is_Beta = ($Package_Version =~ m/_/);
 
 open(SUB, ">xssubs.c") or die "open: $!";
