@@ -424,11 +424,10 @@ package IO::Tty::Constant;
 
 our \$VERSION = '$Package_Version';
 
-use vars qw(\@ISA \@EXPORT_OK);
 require Exporter;
 
-\@ISA = qw(Exporter);
-\@EXPORT_OK = qw(@ttsyms);
+our \@ISA       = qw(Exporter);
+our \@EXPORT_OK = qw(@ttsyms);
 
 __END__
 
@@ -496,41 +495,44 @@ WriteMakefile1(
     'DEFINE'	     => join(" ", sort keys %define),
     'LIBS'           => join(" ", @libs),
     'clean'	     => {'FILES' => 'xssubs.c conf Tty.exp_old log'},
-    'realclean'	     => {'FILES' => 'Tty IO-Tty.ppd'},
+    'realclean'	     => {'FILES' => 'Tty'},
     'AUTHOR'         => 'Roland Giersig <RGiersig@cpan.org>',
     'ABSTRACT'       => 'Pseudo ttys and constants',
     'LICENSE'        => 'perl',
     'MIN_PERL_VERSION' => '5.008008',
-    'BUILD_REQUIRES' =>  {
-	'Test::More' => 0,  # For testing
+    'CONFIGURE_REQUIRES' => {
+	'ExtUtils::MakeMaker' => 0,
+    },
+    'TEST_REQUIRES' =>  {
+	'Test::More' => 0,
     },
     'META_MERGE'     => {
+	'meta-spec'    => { version => 2 },
 	'resources'    => {
-            license => 'http://dev.perl.org/licenses/',
-            repository  => 'https://github.com/cpan-authors/IO-Tty',
-            bugtracker => 'https://github.com/cpan-authors/IO-Tty/issues',
+            license    => ['http://dev.perl.org/licenses/'],
+            repository => {
+                type => 'git',
+                url  => 'https://github.com/cpan-authors/IO-Tty.git',
+                web  => 'https://github.com/cpan-authors/IO-Tty',
+            },
+            bugtracker => {
+                web => 'https://github.com/cpan-authors/IO-Tty/issues',
+            },
 	},
     },
 );
 
-sub MY::postamble {
 
-<<'ESQ';
-
-dist : ppd
-
-ESQ
-}
-
-
-sub WriteMakefile1 {  #Written by Alexandr Ciornii, version 0.21. Added by eumm-upgrade.
+sub WriteMakefile1 {
   my %params=@_;
   my $eumm_version=$ExtUtils::MakeMaker::VERSION;
   $eumm_version=eval $eumm_version;
-  die "EXTRA_META is deprecated" if exists $params{EXTRA_META};
   die "License not specified" if not exists $params{LICENSE};
+  if ($params{TEST_REQUIRES} and $eumm_version < 6.64) {
+    $params{BUILD_REQUIRES}={ %{$params{BUILD_REQUIRES} || {}} , %{$params{TEST_REQUIRES}} };
+    delete $params{TEST_REQUIRES};
+  }
   if ($params{BUILD_REQUIRES} and $eumm_version < 6.5503) {
-    #EUMM 6.5502 has problems with BUILD_REQUIRES
     $params{PREREQ_PM}={ %{$params{PREREQ_PM} || {}} , %{$params{BUILD_REQUIRES}} };
     delete $params{BUILD_REQUIRES};
   }
