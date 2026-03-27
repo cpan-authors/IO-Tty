@@ -15,15 +15,14 @@ use Carp;
 require POSIX;
 
 our @ISA        = qw(IO::Handle);
-our $VERSION    = '1.24';
-our $XS_VERSION = '1.24';
+our $VERSION = '1.24';
 our ( $CONFIG, $DEBUG );
 
 eval { local $^W = 0; local $SIG{__DIE__}; require IO::Stty };
 push @ISA, "IO::Stty" if ( not $@ );    # if IO::Stty is installed
 
 use XSLoader;
-XSLoader::load(__PACKAGE__, $XS_VERSION);
+XSLoader::load(__PACKAGE__, $VERSION);
 
 sub import {
     IO::Tty::Constant->export_to_level( 1, @_ );
