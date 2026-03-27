@@ -3,11 +3,19 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More;
+
+if ($^O eq 'MSWin32') {
+    plan skip_all => 'POSIX pty tests not applicable on Windows (see t/conpty.t)';
+}
+
+plan tests => 5;
 
 $^W = 1;    # enable warnings
 use IO::Pty;
-use IO::Tty qw(TIOCSCTTY TIOCNOTTY TCSETCTTY);
+BEGIN {
+    IO::Tty->import(qw(TIOCSCTTY TIOCNOTTY TCSETCTTY)) if $^O ne 'MSWin32';
+}
 
 $IO::Tty::DEBUG = 1;
 require POSIX;
@@ -16,9 +24,9 @@ my $Perl = $^X;
 
 diag("Configuration: $IO::Tty::CONFIG");
 diag("Checking for appropriate ioctls:");
-diag("TIOCNOTTY") if defined TIOCNOTTY;
-diag("TIOCSCTTY") if defined TIOCSCTTY;
-diag("TCSETCTTY") if defined TCSETCTTY;
+diag("TIOCNOTTY") if defined &TIOCNOTTY;
+diag("TIOCSCTTY") if defined &TIOCSCTTY;
+diag("TCSETCTTY") if defined &TCSETCTTY;
 
 {
     my $pid = fork();

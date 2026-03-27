@@ -1,17 +1,13 @@
 use ExtUtils::MakeMaker;
 
-# Signal Testers that this is an unsupported platform.
-if ( $^O eq 'MSWin32' ) {
-    print "This module requires a POSIX compliant system to work. Try cygwin if you need this module on windows\n";
-    die "OS unsupported";
-}
-
 use strict;
 use warnings;
 
 use IO::File;
 use File::Spec;
 use Config qw(%Config);
+
+my $is_mswin32 = ($^O eq 'MSWin32');
 
 my %cfg;
 @cfg{qw(cc ccflags ldflags)} = @Config{qw(cc ccflags ldflags)};
@@ -49,7 +45,10 @@ _EOT_
 
 #
 # Now some poking around in /dev to see what we can find
+# (skipped on Windows where we use ConPTY instead)
 #
+
+unless ($is_mswin32) {
 
 @define{qw(-DHAVE_CYGWIN -DHAVE_DEV_PTMX)} = (undef, undef)
   if ($^O =~ m/cygwin/i);
@@ -68,8 +67,10 @@ $define{'-DHAVE_DEV_PTMX_BSD'} = undef
 
 if (-d "/dev/ptym" and -d "/dev/pty") {
   $define{'-DHAVE_DEV_PTYM'} = undef;
-  
+
 }
+
+} # end unless $is_mswin32
 
 
 
@@ -110,6 +111,42 @@ __EOT__
 }
 
 unlink qw(compilerok.c compilerok.log);
+
+my @headers;
+my %headers;
+
+if ($is_mswin32) {
+
+# On Windows, check for the ConPTY API (Windows 10 1809+)
+# Use runtime detection via GetProcAddress since MinGW headers
+# may not declare the newer ConPTY types (HPCON, CreatePseudoConsole).
+print "Looking for Windows ConPTY API (CreatePseudoConsole)... ";
+open(TST,">conptytest.c") or die "open: $!";
+print TST <<'ESQ';
+#include <windows.h>
+int main (void) {
+    HMODULE hKernel32 = GetModuleHandleA("kernel32.dll");
+    if (!hKernel32) return 1;
+    FARPROC p = GetProcAddress(hKernel32, "CreatePseudoConsole");
+    return p ? 0 : 1;
+}
+ESQ
+close(TST);
+
+if (system("$cfg{'cc'} $flags conptytest.c -o conptytest -lkernel32 > conptytest.log 2>&1")
+    || system(".\\conptytest.exe > conptytest_run.log 2>&1")) {
+    print "not found.\n";
+    print "\nERROR: Windows ConPTY API not available.\n";
+    print "IO::Tty requires Windows 10 version 1809 or later for native Windows support.\n";
+    print "Alternatively, use Cygwin.\n";
+    die "OS unsupported";
+} else {
+    print "FOUND.\n";
+    $define{'-DHAVE_CONPTY'} = undef;
+    unlink qw(conptytest.c conptytest.log conptytest_run.log conptytest conptytest.exe);
+}
+
+} else { # POSIX systems
 
 # checking for various functions
 
@@ -218,9 +255,8 @@ ESQ
 
 # find various headerfiles
 
-my @headers = qw(termios.h termio.h libutil.h util.h pty.h
+@headers = qw(termios.h termio.h libutil.h util.h pty.h
                  sys/stropts.h sys/ptyio.h sys/pty.h);
-my %headers;
 
 foreach my $h (sort @headers) {
   my $def = $h;
@@ -271,11 +307,20 @@ ESQ
   }
 }
 
+} # end POSIX function/header checks
+
 # now write xssubs
 
 print SUB qq{sv_setpv(config, "@{[sort keys %define]}");\n};
 
-my @ttsyms = qw(B0 B110 B115200 B1200 B134 B150 B153600 B1800 B19200
+my @ttsyms;
+
+if ($is_mswin32) {
+  # No termios symbols on Windows
+  @ttsyms = ();
+} else {
+
+@ttsyms = qw(B0 B110 B115200 B1200 B134 B150 B153600 B1800 B19200
 	    B200 B230400 B2400 B300 B307200 B38400 B460800 B4800 B50
 	    B57600 B600 B75 B76800 B9600 BRKINT BS0 BS1 BSDLY CBAUD
 	    CBAUDEXT CBRK CCTS_OFLOW CDEL CDSUSP CEOF CEOL CEOL2 CEOT
@@ -311,7 +356,9 @@ my @ttsyms = qw(B0 B110 B115200 B1200 B134 B150 B153600 B1800 B19200
 	    VSUSP VSWTCH VT0 VT1 VTDLY VTIME VWERASE WRAP XCASE XCLUDE
 	    XMT1EN XTABS);
 
-print <<_EOT_;
+} # end non-Windows ttsyms
+
+print <<_EOT_ unless $is_mswin32;
 Checking which symbols compile OK...
 (sorry for the tedious check, but some systems have not too clean
  header files, to say the least;  '+' means OK, '-' means not defined
@@ -369,6 +416,16 @@ print "\n\n";
 chdir($dir) or die "chdir: $!";
 
 my $all_ok = 1;
+
+if ($is_mswin32) {
+  if (exists $define{'-DHAVE_CONPTY'}) {
+    print ">>> Windows ConPTY support detected! <<<\n\n";
+    print "NOTE: Windows support is EXPERIMENTAL. It requires Windows 10 1809+.\n";
+    print "      Some features (fork-based usage, controlling terminals) are not\n";
+    print "      available on Windows. Use IO::Pty->spawn() instead of fork().\n\n";
+  }
+} else {
+
 foreach my $check
   (
    {
@@ -401,6 +458,8 @@ foreach my $s (sort keys %badsyms) {
   }
 }
 
+} # end POSIX validation
+
 print ">>> Configuration looks good! <<<\n\n" if $all_ok;
 print <<'_EOT_' if keys %badsyms;
 (If you need those missing symbols, check your header files where those
@@ -428,6 +487,8 @@ require Exporter;
 
 our \@ISA       = qw(Exporter);
 our \@EXPORT_OK = qw(@ttsyms);
+
+1;
 
 __END__
 
@@ -486,6 +547,12 @@ tell me, <RGiersig@cpan.org> about it (including full output of
 'perl Makefile.PL; make; make test;') and I'll see what I can do.
 **********************************************************************
 __EOT__
+
+# On Windows, link against kernel32 (ConPTY) and ws2_32 (socket pair for
+# bidirectional master fd)
+if ($is_mswin32) {
+    push @libs, '-lkernel32', '-lws2_32';
+}
 
 print "DEFINE = @{[sort keys %define]}\n";
 
