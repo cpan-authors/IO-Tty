@@ -561,10 +561,9 @@ tell me, <RGiersig@cpan.org> about it (including full output of
 **********************************************************************
 __EOT__
 
-# On Windows, link against kernel32 (ConPTY) and ws2_32 (socket pair for
-# bidirectional master fd)
+# On Windows, link against kernel32 (ConPTY API)
 if ($is_mswin32) {
-    push @libs, '-lkernel32', '-lws2_32';
+    push @libs, '-lkernel32';
 }
 
 print "DEFINE = @{[sort keys %define]}\n";

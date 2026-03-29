@@ -42,13 +42,16 @@ typedef FILE * InOutStream;
  * Windows 10 version 1809.  ConPTY provides two unidirectional pipes
  * (input and output) rather than a single bidirectional fd.  To maintain
  * API compatibility with the POSIX pty interface (where the master fd
- * supports both read and write), we create a loopback socket pair and
- * spawn bridge threads that copy data between the socket and the ConPTY
- * pipes.  The socket fd is returned as the "master" fd.
+ * supports both read and write), we create a duplex named pipe and
+ * spawn bridge threads that copy data between the pipe and the ConPTY
+ * I/O handles.  The named pipe fd is returned as the "master" fd.
+ *
+ * Named pipes (rather than sockets) are used because Perl's
+ * sysread/syswrite on Windows go through CRT _read/_write which
+ * call ReadFile/WriteFile.  This works correctly for pipe HANDLEs
+ * but not for Winsock SOCKETs (which need recv/send).
  */
 
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <io.h>
 #include <process.h>
 
@@ -78,14 +81,13 @@ WINBASEAPI VOID    WINAPI ClosePseudoConsole(HPCON);
 
 typedef struct {
     int in_use;
-    int master_fd;           /* the socket fd returned to Perl */
+    int master_fd;           /* the pipe fd returned to Perl */
     HPCON hPC;               /* pseudo console handle */
     HANDLE hPipeIn_W;        /* write end: parent writes input to console */
     HANDLE hPipeOut_R;       /* read end: parent reads output from console */
-    HANDLE hBridgeRead;      /* bridge thread: ConPTY output -> socket */
-    HANDLE hBridgeWrite;     /* bridge thread: socket -> ConPTY input */
-    SOCKET sock_internal;    /* internal socket end (connected to bridge threads) */
-    SOCKET sock_master;      /* master socket end (converted to fd for Perl) */
+    HANDLE hBridgeRead;      /* bridge thread: ConPTY output -> pipe */
+    HANDLE hBridgeWrite;     /* bridge thread: pipe -> ConPTY input */
+    HANDLE hPipe_bridge;     /* bridge end of named pipe */
 } conpty_slot_t;
 
 static conpty_slot_t conpty_slots[MAX_CONPTY_SLOTS];
@@ -95,8 +97,6 @@ static void
 conpty_init(void)
 {
     if (!conpty_initialized) {
-        WSADATA wsaData;
-        WSAStartup(MAKEWORD(2, 2), &wsaData);
         memset(conpty_slots, 0, sizeof(conpty_slots));
         conpty_initialized = 1;
     }
@@ -128,76 +128,65 @@ conpty_alloc_slot(void)
 }
 
 /*
- * Undo XSUB.h socket-API macros.
+ * Create a named pipe pair for bidirectional master fd.
  *
- * XSUB.h (un)helpfully redefines socket(), bind(), etc. with versions
- * that return fds instead of SOCKETs.  We need the real Winsock
- * functions here because we work with SOCKET handles directly and
- * convert to an fd only at the very end via _open_osfhandle().
- * Also undef send/recv so the bridge threads use the real Winsock calls.
- */
-#undef socket
-#undef bind
-#undef getsockname
-#undef listen
-#undef connect
-#undef accept
-#undef send
-#undef recv
-
-/*
- * Create a TCP loopback socket pair (Windows lacks socketpair()).
+ * Previous versions used a TCP loopback socket pair, but Perl's
+ * sysread/syswrite on Windows go through the CRT (_read/_write)
+ * which uses ReadFile/WriteFile.  This works well for pipe HANDLEs
+ * but not for SOCKETs (which need recv/send).  Named pipes avoid
+ * the entire Winsock layer and work correctly with Perl's I/O.
+ *
  * Returns 0 on success, -1 on failure.
+ * hMaster receives the Perl-side handle, hBridge the thread-side.
  */
 static int
-win_socketpair(SOCKET pair[2])
+win_pipe_pair(HANDLE *hMaster, HANDLE *hBridge)
 {
-    SOCKET listener;
-    struct sockaddr_in addr;
-    int addrlen = sizeof(addr);
+    char pipename[256];
+    static LONG pipe_counter = 0;
 
-    pair[0] = pair[1] = INVALID_SOCKET;
+    *hMaster = INVALID_HANDLE_VALUE;
+    *hBridge = INVALID_HANDLE_VALUE;
 
-    listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (listener == INVALID_SOCKET)
+    _snprintf(pipename, sizeof(pipename),
+              "\\\\.\\pipe\\io-tty-%lu-%ld",
+              (unsigned long)GetCurrentProcessId(),
+              InterlockedIncrement(&pipe_counter));
+
+    *hMaster = CreateNamedPipeA(
+        pipename,
+        PIPE_ACCESS_DUPLEX,
+        PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+        1,      /* max instances */
+        4096,   /* output buffer */
+        4096,   /* input buffer */
+        0,      /* default timeout */
+        NULL    /* security attrs */
+    );
+    if (*hMaster == INVALID_HANDLE_VALUE)
         return -1;
 
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    addr.sin_port = 0;
+    *hBridge = CreateFileA(
+        pipename,
+        GENERIC_READ | GENERIC_WRITE,
+        0,      /* no sharing */
+        NULL,   /* security attrs */
+        OPEN_EXISTING,
+        0,      /* flags */
+        NULL    /* template */
+    );
+    if (*hBridge == INVALID_HANDLE_VALUE) {
+        CloseHandle(*hMaster);
+        *hMaster = INVALID_HANDLE_VALUE;
+        return -1;
+    }
 
-    if (bind(listener, (struct sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR)
-        goto fail;
-    if (getsockname(listener, (struct sockaddr *)&addr, &addrlen) == SOCKET_ERROR)
-        goto fail;
-    if (listen(listener, 1) == SOCKET_ERROR)
-        goto fail;
-
-    pair[0] = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (pair[0] == INVALID_SOCKET)
-        goto fail;
-    if (connect(pair[0], (struct sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR)
-        goto fail;
-
-    pair[1] = accept(listener, NULL, NULL);
-    if (pair[1] == INVALID_SOCKET)
-        goto fail;
-
-    closesocket(listener);
     return 0;
-
-fail:
-    if (pair[0] != INVALID_SOCKET) closesocket(pair[0]);
-    if (pair[1] != INVALID_SOCKET) closesocket(pair[1]);
-    closesocket(listener);
-    pair[0] = pair[1] = INVALID_SOCKET;
-    return -1;
 }
 
 /*
- * Bridge thread: reads from ConPTY output pipe, writes to socket.
- * This runs until the pipe is closed or an error occurs.
+ * Bridge thread: reads from ConPTY output pipe, writes to named pipe.
+ * This runs until the ConPTY pipe is closed or an error occurs.
  */
 static unsigned __stdcall
 bridge_read_thread(void *arg)
@@ -208,12 +197,13 @@ bridge_read_thread(void *arg)
 
     while (ReadFile(slot->hPipeOut_R, buf, sizeof(buf), &bytesRead, NULL)
            && bytesRead > 0) {
-        int sent = 0;
-        while (sent < (int)bytesRead) {
-            int ret = send(slot->sock_internal, buf + sent,
-                          (int)(bytesRead - sent), 0);
-            if (ret <= 0) goto done;
-            sent += ret;
+        DWORD written = 0;
+        while (written < bytesRead) {
+            DWORD n;
+            if (!WriteFile(slot->hPipe_bridge, buf + written,
+                          bytesRead - written, &n, NULL))
+                goto done;
+            written += n;
         }
     }
 done:
@@ -221,26 +211,25 @@ done:
 }
 
 /*
- * Bridge thread: reads from socket, writes to ConPTY input pipe.
- * This runs until the socket is closed or an error occurs.
+ * Bridge thread: reads from named pipe, writes to ConPTY input pipe.
+ * This runs until the named pipe is closed or an error occurs.
  */
 static unsigned __stdcall
 bridge_write_thread(void *arg)
 {
     conpty_slot_t *slot = (conpty_slot_t *)arg;
     char buf[4096];
+    DWORD bytesRead;
 
-    while (1) {
-        int ret = recv(slot->sock_internal, buf, sizeof(buf), 0);
-        if (ret <= 0) break;
-        DWORD bytesWritten;
-        DWORD toWrite = (DWORD)ret;
+    while (ReadFile(slot->hPipe_bridge, buf, sizeof(buf), &bytesRead, NULL)
+           && bytesRead > 0) {
         DWORD written = 0;
-        while (written < toWrite) {
+        while (written < bytesRead) {
+            DWORD n;
             if (!WriteFile(slot->hPipeIn_W, buf + written,
-                          toWrite - written, &bytesWritten, NULL))
+                          bytesRead - written, &n, NULL))
                 goto done;
-            written += bytesWritten;
+            written += n;
         }
     }
 done:
@@ -264,7 +253,8 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
     HANDLE hPipeIn_W = INVALID_HANDLE_VALUE;
     HANDLE hPipeOut_R = INVALID_HANDLE_VALUE;
     HANDLE hPipeOut_W = INVALID_HANDLE_VALUE;
-    SOCKET pair[2] = { INVALID_SOCKET, INVALID_SOCKET };
+    HANDLE hMaster = INVALID_HANDLE_VALUE;
+    HANDLE hBridge = INVALID_HANDLE_VALUE;
     conpty_slot_t *slot;
     COORD size;
     static int conpty_counter = 0;
@@ -305,11 +295,14 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
     CloseHandle(hPipeOut_W);
     hPipeOut_W = INVALID_HANDLE_VALUE;
 
-    /* Create a socket pair for the bidirectional master fd */
-    if (win_socketpair(pair) < 0) {
+    /* Create a named pipe pair for the bidirectional master fd.
+     * Named pipes work correctly with Perl's sysread/syswrite
+     * (which use CRT _read/_write -> ReadFile/WriteFile),
+     * unlike sockets which need recv/send on Windows. */
+    if (win_pipe_pair(&hMaster, &hBridge) < 0) {
 #if PTY_DEBUG
         if (print_debug)
-            fprintf(stderr, "win_socketpair failed\n");
+            fprintf(stderr, "win_pipe_pair failed\n");
 #endif
         goto fail;
     }
@@ -324,8 +317,7 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
     slot->hPC = hPC;
     slot->hPipeIn_W = hPipeIn_W;
     slot->hPipeOut_R = hPipeOut_R;
-    slot->sock_internal = pair[0];
-    slot->sock_master = pair[1];
+    slot->hPipe_bridge = hBridge;
 
     /* Start bridge threads */
     slot->hBridgeRead = (HANDLE)_beginthreadex(NULL, 0,
@@ -338,8 +330,8 @@ allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
         goto fail;
     }
 
-    /* Convert the master socket to a C file descriptor */
-    *ptyfd = _open_osfhandle((intptr_t)pair[1], 0);
+    /* Convert the master pipe handle to a C file descriptor */
+    *ptyfd = _open_osfhandle((intptr_t)hMaster, O_RDWR | O_BINARY);
     if (*ptyfd < 0) {
         slot->in_use = 0;
         goto fail;
@@ -368,8 +360,8 @@ fail:
     if (hPipeIn_W != INVALID_HANDLE_VALUE) CloseHandle(hPipeIn_W);
     if (hPipeOut_R != INVALID_HANDLE_VALUE) CloseHandle(hPipeOut_R);
     if (hPipeOut_W != INVALID_HANDLE_VALUE) CloseHandle(hPipeOut_W);
-    if (pair[0] != INVALID_SOCKET) closesocket(pair[0]);
-    if (pair[1] != INVALID_SOCKET) closesocket(pair[1]);
+    if (hMaster != INVALID_HANDLE_VALUE) CloseHandle(hMaster);
+    if (hBridge != INVALID_HANDLE_VALUE) CloseHandle(hBridge);
     return 0;
 }
 
@@ -422,10 +414,10 @@ conpty_close(int master_fd)
         CloseHandle(slot->hPipeOut_R);
         slot->hPipeOut_R = INVALID_HANDLE_VALUE;
     }
-    /* Closing the internal socket will cause bridge threads to exit */
-    if (slot->sock_internal != INVALID_SOCKET) {
-        closesocket(slot->sock_internal);
-        slot->sock_internal = INVALID_SOCKET;
+    /* Closing the bridge pipe will cause bridge threads to exit */
+    if (slot->hPipe_bridge != INVALID_HANDLE_VALUE) {
+        CloseHandle(slot->hPipe_bridge);
+        slot->hPipe_bridge = INVALID_HANDLE_VALUE;
     }
     if (slot->hBridgeRead) {
         WaitForSingleObject(slot->hBridgeRead, 1000);
@@ -1352,7 +1344,11 @@ int
 _open_tty(ttyname)
 	char *ttyname
     CODE:
+#ifdef O_NOCTTY
 	RETVAL = open(ttyname, O_RDWR | O_NOCTTY);
+#else
+	RETVAL = open(ttyname, O_RDWR);
+#endif
 	if (RETVAL >= 0) {
 #if defined(I_PUSH)
 	    ioctl(RETVAL, I_PUSH, "ptem");

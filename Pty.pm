@@ -243,7 +243,7 @@ IO::Pty - Pseudo TTY object class
     close($slave);
 
     # Windows (Strawberry Perl, requires Windows 10 1809+):
-    $pty = new IO::Pty;
+    $pty = IO::Pty->new;
     $pid = $pty->spawn("cmd.exe");
     print $pty "echo hello\r\n";
     my $buf;
