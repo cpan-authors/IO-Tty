@@ -148,10 +148,12 @@ sub make_slave_controlling_terminal {
 
 sub DESTROY {
     my $self = shift;
-    if ( exists ${*$self}{'io_pty_slave'} ) {
-        close ${*$self}{'io_pty_slave'};
-        delete ${*$self}{'io_pty_slave'};
-    }
+    # Only drop our reference to the slave; don't force-close it.
+    # If the caller still holds a reference (e.g. IPC::Run), the slave
+    # stays open until they release it.  If nobody else holds a reference,
+    # Perl's refcounting destroys the IO::Tty and closes the fd for us.
+    # See GH #62.
+    delete ${*$self}{'io_pty_slave'};
 }
 
 *clone_winsize_from = \&IO::Tty::clone_winsize_from;
