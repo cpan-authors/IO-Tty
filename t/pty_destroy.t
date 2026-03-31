@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More;
 
 use IO::Pty;
 
@@ -18,6 +18,25 @@ sub fd_is_open {
     }
     return 0;
 }
+
+# Some kernels (e.g. NetBSD) revoke the slave pty when the master is
+# closed, making the slave fd invalid even if Perl still holds a
+# reference.  Probe for this so we can skip the external-ref tests.
+my $kernel_revokes_slave;
+{
+    my $slave_fileno;
+    my $slave_ref;
+    {
+        my $probe = IO::Pty->new;
+        $slave_ref    = $probe->slave;
+        $slave_fileno = $slave_ref->fileno;
+    }
+    # Master is gone.  Is the slave fd still usable?
+    $kernel_revokes_slave = !fd_is_open($slave_fileno);
+    undef $slave_ref;
+}
+
+plan tests => $kernel_revokes_slave ? 2 : 5;
 
 # Test that destroying an IO::Pty object closes the slave fd
 # when no external references are held.
@@ -40,7 +59,10 @@ sub fd_is_open {
 # and closes only when that reference is dropped.
 # See https://github.com/cpan-authors/IO-Tty/issues/62
 
-{
+SKIP: {
+    skip "kernel revokes slave when master closes (e.g. NetBSD)", 3
+        if $kernel_revokes_slave;
+
     my $slave_fileno;
     my $slave_ref;
     {
