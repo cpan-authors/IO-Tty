@@ -29,6 +29,7 @@ jobs:
       - run: perl Makefile.PL
       - run: make
       - run: make test
+        timeout-minutes: 5
       - run: sudo make install
 
   # ------------------------------------------------------------------------
@@ -52,6 +53,7 @@ jobs:
           cpanfile: "cpanfile"
       - run: perl Makefile.PL
       - run: make disttest
+        timeout-minutes: 5
 
   # ------------------------------------------------------------------------
 
@@ -101,6 +103,7 @@ jobs:
       - run: perl Makefile.PL
       - run: make
       - run: make test
+        timeout-minutes: 5
       - run: make install
 
   # ------------------------------------------------------------------------
@@ -141,7 +144,7 @@ jobs:
             curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure .
             perl Makefile.PL
             make
-            prove -wlvmb t
+            perl -e 'alarm 300; exec @ARGV or die "exec: $!"' -- prove -wlvmb t
 
   # ------------------------------------------------------------------------
 
@@ -170,3 +173,4 @@ jobs:
         run: perl Makefile.PL
       - run: make
       - run: make test
+        timeout-minutes: 5
