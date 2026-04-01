@@ -4,6 +4,11 @@ use strict;
 use warnings;
 
 use Test::More;
+
+if ($^O eq 'MSWin32') {
+    plan skip_all => 'clone_winsize tests are POSIX-only (no slave on Windows)';
+}
+
 use IO::Pty;
 require POSIX;
 
