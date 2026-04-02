@@ -165,6 +165,11 @@ foreach my $f (sort keys %funcs) {
 #define __BSD_VISIBLE 1
 #endif
 #endif
+#ifdef __OpenBSD__
+#ifndef _BSD_SOURCE
+#define _BSD_SOURCE
+#endif
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
