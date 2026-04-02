@@ -186,6 +186,9 @@ foreach my $f (sort keys %funcs) {
 #  if __has_include(<libutil.h>)
 #    include <libutil.h>
 #  endif
+#  if __has_include(<termios.h>)
+#    include <termios.h>
+#  endif
 #  if __has_include(<util.h>)
 #    include <util.h>
 #  endif
