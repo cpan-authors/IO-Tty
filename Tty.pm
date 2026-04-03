@@ -44,8 +44,7 @@ sub clone_winsize_from {
     croak "Given filehandle is not a tty in clone_winsize_from, called"
       if not POSIX::isatty($fh);
     return 1 if not POSIX::isatty($self);    # ignored for master ptys
-    my $winsize = " " x 1024;                # preallocate memory for older perl versions
-    $winsize = '';                           # But leave the SV as empty
+    my $winsize = " " x 1024;                # preallocate memory
     ioctl( $fh, &IO::Tty::Constant::TIOCGWINSZ, $winsize )
       and ioctl( $self, &IO::Tty::Constant::TIOCSWINSZ, $winsize )
       and return 1;
