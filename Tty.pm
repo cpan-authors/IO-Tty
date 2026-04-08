@@ -44,8 +44,7 @@ sub clone_winsize_from {
     croak "Given filehandle is not a tty in clone_winsize_from, called"
       if not POSIX::isatty($fh);
     return 1 if not POSIX::isatty($self);    # ignored for master ptys
-    my $winsize = " " x 1024;                # preallocate memory for older perl versions
-    $winsize = '';                           # But leave the SV as empty
+    my $winsize = IO::Tty::pack_winsize( 0, 0, 0, 0 );
     ioctl( $fh, &IO::Tty::Constant::TIOCGWINSZ, $winsize )
       and ioctl( $self, &IO::Tty::Constant::TIOCSWINSZ, $winsize )
       and return 1;
@@ -53,13 +52,13 @@ sub clone_winsize_from {
     return undef;
 }
 
-# ioctl() doesn't tell us how long the structure is, so we'll have to trim it
-# after TIOCGWINSZ
+# ioctl() may pad the buffer beyond sizeof(struct winsize),
+# so trim it before passing to unpack_winsize.
 my $SIZEOF_WINSIZE = length IO::Tty::pack_winsize( 0, 0, 0, 0 );
 
 sub get_winsize {
     my $self = shift;
-    my $winsize = " " x 1024;    # preallocate memory
+    my $winsize = IO::Tty::pack_winsize( 0, 0, 0, 0 );
     ioctl( $self, IO::Tty::Constant::TIOCGWINSZ(), $winsize )
       or croak "Cannot TIOCGWINSZ - $!";
     substr( $winsize, $SIZEOF_WINSIZE ) = "";
