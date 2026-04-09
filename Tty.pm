@@ -7,6 +7,7 @@ use 5.008008;
 
 use strict;
 use warnings;
+use warnings::register;
 use IO::Handle;
 use IO::File;
 use IO::Tty::Constant;
@@ -48,7 +49,7 @@ sub clone_winsize_from {
     ioctl( $fh, &IO::Tty::Constant::TIOCGWINSZ, $winsize )
       and ioctl( $self, &IO::Tty::Constant::TIOCSWINSZ, $winsize )
       and return 1;
-    warn "clone_winsize_from: error: $!" if $^W;
+    carp "clone_winsize_from: error: $!" if warnings::enabled();
     return undef;
 }
 

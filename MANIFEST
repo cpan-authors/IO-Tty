@@ -13,6 +13,7 @@ t/pty_set_raw.t
 t/slave.t
 t/test.t
 t/ttyname.t
+t/warnings.t
 t/winsize.t
 try
 Tty.pm
