@@ -14,22 +14,22 @@ use File::Spec;
 use Config qw(%Config);
 
 my %cfg;
-@cfg{qw(cc ccflags ldflags)} = @Config{qw(cc ccflags ldflags)};
+@cfg{qw(cc ccflags optimize ldflags)} = @Config{qw(cc ccflags optimize ldflags)};
 for my $arg (@ARGV) {
-  if ( $arg =~ /^(CC|CCFLAGS|LDFLAGS)=(.*)/i ) {
+  if ( $arg =~ /^(CC|CCFLAGS|OPTIMIZE|LDFLAGS)=(.*)/i ) {
     $cfg{lc($1)} = $2;
   }
 }
 if ($ENV{PERL_MM_OPT}) {
   # Split on whitespace just like EU::MM
   for ( split ' ', $ENV{PERL_MM_OPT} ) {
-    if ( /^(CC|CCFLAGS|LDFLAGS)=(.*)/i ) {
+    if ( /^(CC|CCFLAGS|OPTIMIZE|LDFLAGS)=(.*)/i ) {
       $cfg{lc($1)} = $2;
     }
   }
 }
 
-my $flags = "$cfg{ccflags} $cfg{ldflags}";
+my $flags = "$cfg{ccflags} $cfg{optimize} $cfg{ldflags}";
 $flags =~ s/([^A-Za-z0-9 -_])/\\$1/g; # escape shell-metachars
 
 $|=1; # to see output immediately
