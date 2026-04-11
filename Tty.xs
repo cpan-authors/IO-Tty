@@ -231,7 +231,7 @@ char * ptsname(int);
 #endif
 
 static int
-open_slave(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
+open_slave(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
 { 
     /*
      * now do some things that are supposedly healthy for ptys,
@@ -440,7 +440,7 @@ open_slave(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
  */
 
 static int
-allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
+allocate_pty(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
 {
     *ptyfd = -1;
     *ttyfd = -1;
