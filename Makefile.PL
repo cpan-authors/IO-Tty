@@ -84,6 +84,53 @@ use Cwd qw(getcwd);
 my $dir = getcwd;
 chdir('conf') or die "chdir: $!";
 
+# Platform extension defines shared by function and header probes.
+# Without these, headers like pty.h or functions like openpty may not
+# be visible on strict POSIX systems or certain BSDs.
+my $platform_defines = <<'PLATDEFS';
+/* Enable POSIX and platform extensions so functions like grantpt,
+   ptsname, openpty etc. are declared in standard headers.  */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+#ifdef __NetBSD__
+#ifndef _NETBSD_SOURCE
+#define _NETBSD_SOURCE
+#endif
+#endif
+#ifdef __APPLE__
+#ifndef _DARWIN_C_SOURCE
+#define _DARWIN_C_SOURCE
+#endif
+#endif
+#ifdef __sun
+#ifndef __EXTENSIONS__
+#define __EXTENSIONS__
+#endif
+#endif
+#ifdef __FreeBSD__
+#ifndef __BSD_VISIBLE
+#define __BSD_VISIBLE 1
+#endif
+#endif
+#ifdef __DragonFly__
+#ifndef __BSD_VISIBLE
+#define __BSD_VISIBLE 1
+#endif
+#endif
+#ifdef __OpenBSD__
+#ifndef _BSD_SOURCE
+#define _BSD_SOURCE
+#endif
+#endif
+PLATDEFS
+
 open(TST,">compilerok.c") or die "open: $!";
 print TST <<'ESQ';
 int main () { return 0; }
@@ -129,48 +176,7 @@ my %funcs = (ttyname      => "",
 foreach my $f (sort keys %funcs) {
   open(TST,">functest_$f.c") or die "open: $!";
   print TST <<"ESQ";
-/* Enable POSIX and platform extensions so functions like grantpt,
-   ptsname, openpty etc. are declared in standard headers.  */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-#ifdef __NetBSD__
-#ifndef _NETBSD_SOURCE
-#define _NETBSD_SOURCE
-#endif
-#endif
-#ifdef __APPLE__
-#ifndef _DARWIN_C_SOURCE
-#define _DARWIN_C_SOURCE
-#endif
-#endif
-#ifdef __sun
-#ifndef __EXTENSIONS__
-#define __EXTENSIONS__
-#endif
-#endif
-#ifdef __FreeBSD__
-#ifndef __BSD_VISIBLE
-#define __BSD_VISIBLE 1
-#endif
-#endif
-#ifdef __DragonFly__
-#ifndef __BSD_VISIBLE
-#define __BSD_VISIBLE 1
-#endif
-#endif
-#ifdef __OpenBSD__
-#ifndef _BSD_SOURCE
-#define _BSD_SOURCE
-#endif
-#endif
-
+$platform_defines
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -240,6 +246,7 @@ foreach my $h (sort @headers) {
   $def =~ s/\W/_/g;
   open(TST,">headtest_$def.c") or die "open: $!";
   print TST <<"ESQ";
+$platform_defines
 #include <sys/types.h>
 #include <$h>
 int main () { return 0; }
