@@ -3,7 +3,15 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More;
+
+BEGIN {
+    if ( $^O eq 'MSWin32' ) {
+        plan skip_all => 'slave() is not available on Windows';
+    }
+    plan tests => 8;
+}
+
 use IO::Pty;
 require POSIX;
 

@@ -3,7 +3,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More;
+
+BEGIN {
+    if ( $^O eq 'MSWin32' ) {
+        plan skip_all => 'POSIX ioctl constants not available on Windows';
+    }
+    plan tests => 5;
+}
 
 # Test that IO::Tty exports constants via import()
 {
