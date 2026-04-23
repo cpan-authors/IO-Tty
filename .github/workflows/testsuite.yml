@@ -19,11 +19,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: perl -V
         run: perl -V
       - name: Install dependencies
-        uses: perl-actions/install-with-cpm@v1
+        uses: perl-actions/install-with-cpm@v2
         with:
           cpanfile: "cpanfile"
       - run: perl Makefile.PL
@@ -44,11 +44,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: perl -V
         run: perl -V
       - name: Install dependencies
-        uses: perl-actions/install-with-cpm@v1
+        uses: perl-actions/install-with-cpm@v2
         with:
           cpanfile: "cpanfile"
       - run: perl Makefile.PL
@@ -92,11 +92,11 @@ jobs:
       image: perldocker/perl-tester:${{ matrix.perl-version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: perl -V
         run: perl -V
       - name: Install dependencies
-        uses: perl-actions/install-with-cpm@v1
+        uses: perl-actions/install-with-cpm@v2
         with:
           cpanfile: "cpanfile"
           sudo: false
@@ -129,11 +129,11 @@ jobs:
             pkginstall: pkgin -y install perl || true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         timeout-minutes: 5
 
       - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@v0.32.0
+        uses: cross-platform-actions/action@v1
         timeout-minutes: 15
         with:
           operating_system: ${{ matrix.os.name }}
@@ -159,13 +159,13 @@ jobs:
       RELEASE_TESTING: 1
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Perl
         run: brew install perl
       - name: perl -V
         run: perl -V
       - name: Install dependencies
-        uses: perl-actions/install-with-cpm@v1
+        uses: perl-actions/install-with-cpm@v2
         with:
           cpanfile: "cpanfile"
           sudo: false
