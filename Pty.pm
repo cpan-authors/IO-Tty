@@ -24,12 +24,19 @@ sub new {
     croak "Cannot open a pty" if not defined $ptyfd;
 
     my $pty = $class->SUPER::new_from_fd( $ptyfd, "r+" );
-    croak "Cannot create a new $class from fd $ptyfd: $!" if not $pty;
+    if (not $pty) {
+        POSIX::close($ptyfd);
+        POSIX::close($ttyfd);
+        croak "Cannot create a new $class from fd $ptyfd: $!";
+    }
     $pty->autoflush(1);
     bless $pty => $class;
 
     my $slave = IO::Tty->new_from_fd( $ttyfd, "r+" );
-    croak "Cannot create a new IO::Tty from fd $ttyfd: $!" if not $slave;
+    if (not $slave) {
+        POSIX::close($ttyfd);
+        croak "Cannot create a new IO::Tty from fd $ttyfd: $!";
+    }
     $slave->autoflush(1);
 
     ${*$pty}{'io_pty_slave'}     = $slave;
@@ -71,7 +78,10 @@ sub slave {
     croak "Cannot open slave $tty: $!" if $slave_fd < 0;
 
     my $slave = IO::Tty->new_from_fd( $slave_fd, "r+" );
-    croak "Cannot create IO::Tty from fd $slave_fd: $!" if not $slave;
+    if (not $slave) {
+        POSIX::close($slave_fd);
+        croak "Cannot create IO::Tty from fd $slave_fd: $!";
+    }
     $slave->autoflush(1);
 
     ${*$slave}{'io_tty_ttyname'}    = $tty;
