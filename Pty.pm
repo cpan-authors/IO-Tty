@@ -4,7 +4,6 @@ package IO::Pty;
 
 use strict;
 use warnings;
-use warnings::register;
 use Carp;
 use IO::Tty qw(TIOCSCTTY TCSETCTTY TIOCNOTTY);
 use IO::File;
@@ -111,7 +110,7 @@ sub make_slave_controlling_terminal {
     }
 
     if ( open( \*DEVTTY, "/dev/tty" ) ) {
-        warn "Could not disconnect from controlling terminal?!\n" if warnings::enabled();
+        warn "Could not disconnect from controlling terminal?!\n";
         close \*DEVTTY;
     }
 
@@ -136,16 +135,16 @@ sub make_slave_controlling_terminal {
     if ( not open( \*DEVTTY, "/dev/tty" ) ) {
         if ( defined TIOCSCTTY ) {
             if ( not defined ioctl( ${*$self}{'io_pty_slave'}, TIOCSCTTY, 0 ) ) {
-                warn "warning: TIOCSCTTY failed, slave might not be set as controlling terminal: $!" if warnings::enabled();
+                warn "warning: TIOCSCTTY failed, slave might not be set as controlling terminal: $!";
             }
         }
         elsif ( defined TCSETCTTY ) {
             if ( not defined ioctl( ${*$self}{'io_pty_slave'}, TCSETCTTY, 0 ) ) {
-                warn "warning: TCSETCTTY failed, slave might not be set as controlling terminal: $!" if warnings::enabled();
+                warn "warning: TCSETCTTY failed, slave might not be set as controlling terminal: $!";
             }
         }
         else {
-            warn "warning: You have neither TIOCSCTTY nor TCSETCTTY on your system\n" if warnings::enabled();
+            warn "warning: You have neither TIOCSCTTY nor TCSETCTTY on your system\n";
             return 0;
         }
     }
