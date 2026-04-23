@@ -107,7 +107,7 @@ sub make_slave_controlling_terminal {
 
     # Create a new 'session', lose controlling terminal.
     if ( POSIX::setsid() == -1 ) {
-        warn "setsid() failed, strange behavior may result: $!\r\n" if warnings::enabled();
+        warn "setsid() failed, strange behavior may result: $!\r\n";
     }
 
     if ( open( \*DEVTTY, "/dev/tty" ) ) {
