@@ -32,7 +32,6 @@
       Extract version from Tty.pm in Makefile.PL using
       MM->parse_version() instead of hardcoding it, use VERSION_FROM in
       WriteMakefile, and remove $XS_VERSION from Tty.pm.
-
 1.24 2026-03-27 Todd Rinaldo <toddr@cpan.org>
 
   Bug Fixes:

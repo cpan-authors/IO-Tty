@@ -48,7 +48,7 @@ sub clone_winsize_from {
     ioctl( $fh, &IO::Tty::Constant::TIOCGWINSZ, $winsize )
       and ioctl( $self, &IO::Tty::Constant::TIOCSWINSZ, $winsize )
       and return 1;
-    warn "clone_winsize_from: error: $!" if $^W;
+    carp "clone_winsize_from: error: $!";
     return undef;
 }
 
