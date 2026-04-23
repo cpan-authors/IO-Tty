@@ -303,18 +303,8 @@ Sets the terminal size. If not specified, C<$xpixel> and C<$ypixel> are set to
 
 L<IO::Tty>, L<IO::Tty::Constant>, L<IO::Handle>, L<Expect>, L<Proc::SyncExec>
 
-
-=head1 MAILING LISTS
-
-As this module is mainly used by Expect, support for it is available
-via the two Expect mailing lists, expectperl-announce and
-expectperl-discuss, at
-
-  http://lists.sourceforge.net/lists/listinfo/expectperl-announce
-
-and
-
-  http://lists.sourceforge.net/lists/listinfo/expectperl-discuss
+Source code and issue tracker at
+L<https://github.com/cpan-authors/IO-Tty>.
 
 
 =head1 AUTHORS
@@ -322,10 +312,12 @@ and
 Originally by Graham Barr E<lt>F<gbarr@pobox.com>E<gt>, based on the
 Ptty module by Nick Ing-Simmons E<lt>F<nik@tiuk.ti.com>E<gt>.
 
-Now maintained and heavily rewritten by Roland Giersig
+Heavily rewritten by Roland Giersig
 E<lt>F<RGiersig@cpan.org>E<gt>.
 
-Contains copyrighted stuff from openssh v3.0p1, authored by 
+Currently maintained by Todd Rinaldo.
+
+Contains copyrighted stuff from openssh v3.0p1, authored by
 Tatu Ylonen <ylo@cs.hut.fi>, Markus Friedl and Todd C. Miller
 <Todd.Miller@courtesan.com>.
 
