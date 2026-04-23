@@ -193,8 +193,8 @@ IO::Pty - Pseudo TTY object class
 
 C<IO::Pty> provides an interface to allow the creation of a pseudo tty.
 
-C<IO::Pty> inherits from C<IO::Handle> and so provide all the methods
-defined by the C<IO::Handle> package.
+C<IO::Pty> inherits from L<IO::Handle> and so provide all the methods
+defined by the L<IO::Handle> package.
 
 Please note that pty creation is very system-dependent.  If you have
 problems, see L<IO::Tty> for help.
@@ -224,7 +224,7 @@ purpose only, to get a slave filehandle, use slave().
 =item slave()
 
 The C<slave> method will return the slave filehandle of the given
-master pty, opening it anew if necessary.  If IO::Stty is installed,
+master pty, opening it anew if necessary.  If L<IO::Stty> is installed,
 you can then call C<$slave-E<gt>stty()> to modify the terminal settings.
 
 =item close_slave()
@@ -245,7 +245,7 @@ to C<sync_exec()> (see L<Proc::SyncExec>).  See the C<try> script
 =item set_raw()
 
 Will set the pty to raw.  Note that this is a one-way operation, you
-need IO::Stty to set the terminal settings to anything else.
+need L<IO::Stty> to set the terminal settings to anything else.
 
 On some systems, the master pty is not a tty.  This method checks for
 that and returns success anyway on such systems.  Note that this
