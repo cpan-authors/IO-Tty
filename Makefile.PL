@@ -160,17 +160,17 @@ unlink qw(compilerok.c compilerok.log);
 
 # checking for various functions
 
-my %funcs = (ttyname      => "",
-	     openpty      => "-lutil",
-	     _getpty      => "",
-	     strlcpy      => "",
-	     sigaction    => "",
-	     grantpt      => "",
-	     unlockpt     => "",
-	     getpt        => "",
-	     posix_openpt => "",
-	     ptsname      => "",
-	     ptsname_r    => "",
+my %funcs = (ttyname      => [""],
+	     openpty      => ["", "-lutil"],
+	     _getpty      => [""],
+	     strlcpy      => [""],
+	     sigaction    => [""],
+	     grantpt      => [""],
+	     unlockpt     => [""],
+	     getpt        => [""],
+	     posix_openpt => [""],
+	     ptsname      => [""],
+	     ptsname_r    => [""],
 	    );
 
 foreach my $f (sort keys %funcs) {
@@ -225,13 +225,24 @@ ESQ
 
   close(TST);
   print "Looking for $f()" . "." x (13-length($f)) . " ";
-  if (system("$cfg{'cc'} $flags $funcs{$f} functest_$f.c > functest_$f.log 2>&1")) {
-    print "not found.\n";
-  } else {
-    $define{"-DHAVE_\U$f"} = undef;
-    push @libs, $funcs{$f} if $funcs{$f};
+
+  # Try each library candidate in order (e.g. openpty is in libc on
+  # glibc 2.34+/musl, but needs -lutil on BSDs and older glibc).
+  my @lib_candidates = @{$funcs{$f}};
+  my $found = 0;
+  for my $try_lib (@lib_candidates) {
+    unless (system("$cfg{'cc'} $flags $try_lib functest_$f.c > functest_$f.log 2>&1")) {
+      $define{"-DHAVE_\U$f"} = undef;
+      push @libs, $try_lib if $try_lib;
+      $found = 1;
+      last;
+    }
+  }
+  if ($found) {
     print "FOUND.\n";
-    unlink "functest_$f.c", "functest_$f.log" ;
+    unlink "functest_$f.c", "functest_$f.log";
+  } else {
+    print "not found.\n";
   }
 }
 
