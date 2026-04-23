@@ -96,7 +96,7 @@ sub make_slave_controlling_terminal {
     my $self = shift;
     local (*DEVTTY);
 
-    # loose controlling terminal explicitly
+    # lose controlling terminal explicitly
     if ( defined TIOCNOTTY ) {
         if ( open( \*DEVTTY, "/dev/tty" ) ) {
             ioctl( \*DEVTTY, TIOCNOTTY, 0 );
@@ -115,10 +115,14 @@ sub make_slave_controlling_terminal {
     }
 
     # now open slave, this should set it as controlling tty on some systems
-    my $ttyname = ${*$self}{'io_pty_ttyname'};
-    my $slv     = IO::Tty->new;
-    $slv->open( $ttyname, O_RDWR )
-      or croak "Cannot open slave $ttyname: $!";
+    # Use _open_tty() to ensure STREAMS modules (ptem, ldterm, ttcompat)
+    # are pushed on Solaris/HP-UX, matching the slave() method.
+    my $ttyname  = ${*$self}{'io_pty_ttyname'};
+    my $slave_fd = IO::Tty::_open_tty($ttyname);
+    croak "Cannot open slave $ttyname: $!" if $slave_fd < 0;
+    my $slv = IO::Tty->new_from_fd( $slave_fd, "r+" );
+    croak "Cannot create IO::Tty from fd $slave_fd: $!" if not $slv;
+    $slv->autoflush(1);
 
     if ( not exists ${*$self}{'io_pty_slave'} ) {
         ${*$self}{'io_pty_slave'} = $slv;
