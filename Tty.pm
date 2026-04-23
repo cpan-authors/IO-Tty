@@ -125,9 +125,9 @@ IO::Tty - Low-level allocate a pseudo-Tty, import constants.
 
 =head1 DESCRIPTION
 
-C<IO::Tty> is used internally by C<IO::Pty> to create a pseudo-tty.
+C<IO::Tty> is used internally by L<IO::Pty> to create a pseudo-tty.
 You wouldn't want to use it directly except to import constants, use
-C<IO::Pty>.  For a list of importable constants, see
+L<IO::Pty>.  For a list of importable constants, see
 L<IO::Tty::Constant>.
 
 Windows is now supported, but ONLY under the Cygwin
