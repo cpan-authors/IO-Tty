@@ -200,6 +200,11 @@ $platform_defines
 #  endif
 #endif
 
+/* Store the function pointer in a global so the optimizer cannot
+   eliminate the reference.  A local + (void)cast is dead code that
+   -O2/-Os removes, causing the linker to miss undefined symbols.  */
+void *functest_ptr;
+
 int
 main ()
 {
@@ -209,13 +214,8 @@ main ()
 #if defined (__stub_$f) || defined (__stub___$f)
 choke me
 #else
-/* Undef any macro wrapper (e.g. macOS _FORTIFY_SOURCE) so we get
-   the real function symbol for the linker check below.  */
 #undef $f
-/* Cast through void* to avoid incompatible-function-pointer-types
-   errors on newer clang (e.g. strlcpy returns size_t, not void).  */
-void *fptr = (void *) $f;
-(void)fptr;
+functest_ptr = (void *) $f;
 #endif
 
   ;
