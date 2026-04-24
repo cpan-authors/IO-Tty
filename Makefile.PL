@@ -550,6 +550,23 @@ WriteMakefile1(
                 web => 'https://github.com/cpan-authors/IO-Tty/issues',
             },
 	},
+	'provides'     => {
+            'IO::Tty' => {
+                file    => 'Tty.pm',
+                version => $Package_Version,
+            },
+            'IO::Pty' => {
+                file    => 'Pty.pm',
+                version => $Package_Version,
+            },
+            'IO::Tty::Constant' => {
+                file    => 'Tty/Constant.pm',
+                version => $Package_Version,
+            },
+	},
+    },
+    'dist'           => {
+        TARFLAGS => '--format=ustar -cvf',
     },
 );
 
