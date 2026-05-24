@@ -116,9 +116,11 @@ sub make_slave_controlling_terminal {
 
     # now open slave, this should set it as controlling tty on some systems
     # Use _open_tty() to ensure STREAMS modules (ptem, ldterm, ttcompat)
-    # are pushed on Solaris/HP-UX, matching the slave() method.
+    # are pushed on Solaris/HP-UX.  Pass noctty=0 so the open can
+    # automatically acquire a controlling terminal (the whole point of
+    # this method).
     my $ttyname  = ${*$self}{'io_pty_ttyname'};
-    my $slave_fd = IO::Tty::_open_tty($ttyname);
+    my $slave_fd = IO::Tty::_open_tty($ttyname, 0);
     croak "Cannot open slave $ttyname: $!" if $slave_fd < 0;
     my $slv = IO::Tty->new_from_fd( $slave_fd, "r+" );
     croak "Cannot create IO::Tty from fd $slave_fd: $!" if not $slv;
