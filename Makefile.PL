@@ -161,7 +161,7 @@ unlink qw(compilerok.c compilerok.log);
 # checking for various functions
 
 my %funcs = (ttyname      => [""],
-	     openpty      => ["", "-lutil"],
+	     openpty      => ["-lutil", ""],
 	     _getpty      => [""],
 	     strlcpy      => [""],
 	     sigaction    => [""],
@@ -226,8 +226,10 @@ ESQ
   close(TST);
   print "Looking for $f()" . "." x (13-length($f)) . " ";
 
-  # Try each library candidate in order (e.g. openpty is in libc on
-  # glibc 2.34+/musl, but needs -lutil on BSDs and older glibc).
+  # Try each library candidate in order.  openpty needs -lutil on
+  # BSDs and older glibc; on glibc 2.34+/musl it lives in libc.
+  # We try -lutil first because LTO can make a libc-only probe
+  # falsely succeed on glibc 2.32-2.33 (GH #92).
   my @lib_candidates = @{$funcs{$f}};
   my $found = 0;
   for my $try_lib (@lib_candidates) {
