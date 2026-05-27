@@ -85,7 +85,6 @@ sub slave {
     $slave->autoflush(1);
 
     ${*$slave}{'io_tty_ttyname'}    = $tty;
-    ${*$master}{'io_pty_slave'}     = $slave;
 
     return $slave;
 }
