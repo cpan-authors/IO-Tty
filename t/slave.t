@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 10;
 use IO::Pty;
 require POSIX;
 
@@ -52,4 +52,19 @@ require POSIX;
     my $slave2 = $pty->slave;
     ok( defined fileno($slave2),
         "re-opened slave has a valid fileno" );
+}
+
+# Test that slave() after close_slave() does not cache (GitHub #91)
+# If the re-opened slave is cached, the parent keeps an open fd to the
+# slave side, preventing EOF detection on the master when the child exits.
+{
+    my $pty = IO::Pty->new;
+    $pty->close_slave;
+
+    my $slave_tmp = $pty->slave;
+    ok( defined fileno($slave_tmp), "temporary slave has valid fd" );
+    undef $slave_tmp;
+
+    ok( ! exists ${*$pty}{'io_pty_slave'},
+        "slave() after close_slave() does not re-cache" );
 }
