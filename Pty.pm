@@ -123,7 +123,10 @@ sub make_slave_controlling_terminal {
     my $slave_fd = IO::Tty::_open_tty($ttyname, 0);
     croak "Cannot open slave $ttyname: $!" if $slave_fd < 0;
     my $slv = IO::Tty->new_from_fd( $slave_fd, "r+" );
-    croak "Cannot create IO::Tty from fd $slave_fd: $!" if not $slv;
+    if (not $slv) {
+        POSIX::close($slave_fd);
+        croak "Cannot create IO::Tty from fd $slave_fd: $!";
+    }
     $slv->autoflush(1);
 
     if ( not exists ${*$self}{'io_pty_slave'} ) {
