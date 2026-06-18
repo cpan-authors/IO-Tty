@@ -14,6 +14,18 @@ our $VERSION = '1.31';    # keep same as in Tty.pm
 eval { local $^W = 0; local $SIG{__DIE__}; require IO::Stty };
 push @ISA, "IO::Stty" if ( not $@ );    # if IO::Stty is installed
 
+# Wrap a raw slave fd into an IO::Tty handle, closing the fd on failure.
+sub _fd_to_handle {
+    my ($fd) = @_;
+    my $handle = IO::Tty->new_from_fd( $fd, "r+" );
+    if (not $handle) {
+        POSIX::close($fd);
+        croak "Cannot create IO::Tty from fd $fd: $!";
+    }
+    $handle->autoflush(1);
+    return $handle;
+}
+
 sub new {
     my ($class) = $_[0] || "IO::Pty";
     $class = ref($class) if ref($class);
@@ -32,12 +44,7 @@ sub new {
     $pty->autoflush(1);
     bless $pty => $class;
 
-    my $slave = IO::Tty->new_from_fd( $ttyfd, "r+" );
-    if (not $slave) {
-        POSIX::close($ttyfd);
-        croak "Cannot create a new IO::Tty from fd $ttyfd: $!";
-    }
-    $slave->autoflush(1);
+    my $slave = _fd_to_handle($ttyfd);
 
     ${*$pty}{'io_pty_slave'}     = $slave;
     ${*$pty}{'io_pty_ttyname'}   = $ttyname;
@@ -77,12 +84,7 @@ sub slave {
     my $slave_fd = IO::Tty::_open_tty($tty);
     croak "Cannot open slave $tty: $!" if $slave_fd < 0;
 
-    my $slave = IO::Tty->new_from_fd( $slave_fd, "r+" );
-    if (not $slave) {
-        POSIX::close($slave_fd);
-        croak "Cannot create IO::Tty from fd $slave_fd: $!";
-    }
-    $slave->autoflush(1);
+    my $slave = _fd_to_handle($slave_fd);
 
     ${*$slave}{'io_tty_ttyname'}    = $tty;
     ${*$master}{'io_pty_slave'}     = $slave;
@@ -122,9 +124,7 @@ sub make_slave_controlling_terminal {
     my $ttyname  = ${*$self}{'io_pty_ttyname'};
     my $slave_fd = IO::Tty::_open_tty($ttyname, 0);
     croak "Cannot open slave $ttyname: $!" if $slave_fd < 0;
-    my $slv = IO::Tty->new_from_fd( $slave_fd, "r+" );
-    croak "Cannot create IO::Tty from fd $slave_fd: $!" if not $slv;
-    $slv->autoflush(1);
+    my $slv = _fd_to_handle($slave_fd);
 
     if ( not exists ${*$self}{'io_pty_slave'} ) {
         ${*$self}{'io_pty_slave'} = $slv;
