@@ -387,7 +387,7 @@ open_slave(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
       fprintf(stderr, "trying to I_PUSH ptem...\n");
 #endif
     if (ioctl(*ttyfd, I_PUSH, "ptem") < 0)
-#if defined (__solaris) || defined(__hpux)
+#if (defined(__SVR4) && defined(__sun)) || defined(__hpux)
 	if (ckWARN(WARN_IO))
 	    warn("IO::Tty::pty_allocate: ioctl I_PUSH ptem: %.100s", strerror(errno))
 #endif
@@ -398,7 +398,7 @@ open_slave(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
       fprintf(stderr, "trying to I_PUSH ldterm...\n");
 #endif
     if (ioctl(*ttyfd, I_PUSH, "ldterm") < 0)
-#if defined (__solaris) || defined(__hpux)
+#if (defined(__SVR4) && defined(__sun)) || defined(__hpux)
 	if (ckWARN(WARN_IO))
 	    warn("IO::Tty::pty_allocate: ioctl I_PUSH ldterm: %.100s", strerror(errno))
 #endif
@@ -409,7 +409,7 @@ open_slave(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
       fprintf(stderr, "trying to I_PUSH ttcompat...\n");
 #endif
     if (ioctl(*ttyfd, I_PUSH, "ttcompat") < 0)
-#if defined (__solaris)
+#if defined(__SVR4) && defined(__sun)
 	if (ckWARN(WARN_IO))
 	    warn("IO::Tty::pty_allocate: ioctl I_PUSH ttcompat: %.100s", strerror(errno))
 #endif
